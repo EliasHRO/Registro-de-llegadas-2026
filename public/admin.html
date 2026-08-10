@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torre de Control · Llegadas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EBEDF0;
+    --bg-elevated:#F4F5F7;
+    --card:#FFFFFF;
+    --card-hover:#F7F8FA;
+    --border:#E1E4E9;
+    --border-soft:#EAECEF;
+    --text:#1C1F26;
+    --muted:#6B7280;
+    --accent:#E11D48;
+    --accent-dark:#AF1338;
+    --accent-glow:rgba(225,29,72,.22);
+    --accent-soft:rgba(225,29,72,.09);
+    --ok:#149A5C;
+    --ok-glow:rgba(20,154,92,.22);
+    --ok-soft:rgba(20,154,92,.09);
+    --gold:#B8860B;
+    --gold-glow:rgba(184,134,11,.2);
+    --info:#3457D5;
+    --sky:#0EA5E9;
+    --sky-soft:#E0F6FF;
+    --warn:#B7791F;
+    --warn-soft:rgba(183,121,31,.12);
+    --info-soft:rgba(52,87,213,.09);
+    --radius:16px;
+    --shadow:0 1px 2px rgba(20,22,28,.05), 0 20px 44px -22px rgba(20,22,28,.18);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .4s ease;}
+  body.dashboard-bg{
+    background-image:linear-gradient(rgba(238,240,244,.90),rgba(238,240,244,.90)), url('/assets/fleet-bg.jpg');
+    background-size:cover;
+    background-position:center 40%;
+    background-attachment:fixed;
+    background-repeat:no-repeat;
+  }
+  #app{min-height:100vh;display:flex;flex-direction:column;position:relative;z-index:1;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  .bg-orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.16;z-index:0;pointer-events:none;transition:margin .5s ease-out;}
+  .bg-orb.o1{width:520px;height:520px;background:var(--accent);top:-180px;left:-140px;animation:drift1 16s ease-in-out infinite, breathe1 6s ease-in-out infinite;}
+  .bg-orb.o2{width:460px;height:460px;background:var(--gold);bottom:-200px;right:-160px;animation:drift2 19s ease-in-out infinite, breathe2 7s ease-in-out infinite;}
+  .bg-orb.o3{width:380px;height:380px;background:var(--info);top:40%;left:60%;animation:drift3 22s ease-in-out infinite;opacity:.10;}
+  .bg-orb.o4{width:260px;height:260px;background:var(--ok);top:10%;right:10%;animation:drift4 14s ease-in-out infinite;opacity:.10;}
+  .bg-orb.o5{width:300px;height:300px;background:var(--accent);bottom:8%;left:8%;animation:drift5 18s ease-in-out infinite;opacity:.09;}
+  @keyframes breathe1{0%,100%{opacity:.16;}50%{opacity:.24;}}
+  @keyframes breathe2{0%,100%{opacity:.16;}50%{opacity:.22;}}
+  @keyframes drift4{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-40px,30px) scale(1.15);}}
+  @keyframes drift5{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(35px,-45px) scale(.9);}}
+  @keyframes drift1{0%,100%{transform:translate(0,0);}33%{transform:translate(90px,60px);}66%{transform:translate(40px,110px);}}
+  @keyframes drift2{0%,100%{transform:translate(0,0);}33%{transform:translate(-80px,-55px);}66%{transform:translate(-30px,-100px);}}
+  @keyframes drift3{0%,100%{transform:translate(0,0);}50%{transform:translate(-70px,80px);}}
+  .bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;
+    background-image:linear-gradient(var(--text) 1px, transparent 1px), linear-gradient(90deg, var(--text) 1px, transparent 1px);
+    background-size:42px 42px;}
+
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes popIn{0%{opacity:0;transform:scale(.85);}70%{transform:scale(1.03);}100%{opacity:1;transform:scale(1);}}
+
+  .checkin-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;}
+  .checkin-card{width:100%;max-width:440px;background:rgba(255,255,255,.78);backdrop-filter:blur(18px);border-radius:22px;box-shadow:var(--shadow);border:1px solid var(--border);padding:38px 32px 30px;text-align:center;animation:fadeInUp .5s ease;}
+  .brand-tag{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent-dark);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:20px;border:1px solid rgba(225,29,72,.18);}
+  .brand-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);animation:pulse 1.8s infinite;}
+
+  .logo-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px;}
+  .logo-row img{height:30px;width:auto;object-fit:contain;}
+  .logo-divider{width:1px;height:24px;background:var(--border);}
+  .logo-row-topbar{margin-bottom:0;margin-right:16px;padding-right:16px;border-right:1px solid var(--border);justify-content:flex-start;}
+  .logo-row-topbar img{height:22px;}
+  .logo-row-topbar .logo-divider{height:18px;}
+  .login-icon{width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dark);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  h1.title{font-size:23px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;}
+  p.sub{color:var(--muted);font-size:14px;margin:0 0 28px;line-height:1.5;}
+  .field{text-align:left;margin-bottom:16px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em;}
+  .field input{width:100%;padding:14px 15px;border-radius:11px;border:1.5px solid var(--border);font-size:16px;font-family:inherit;background:var(--bg-elevated);color:var(--text);transition:border-color .2s,box-shadow .2s;}
+  .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+
+  .type-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;}
+  .type-opt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:11px;border:1.5px solid var(--border);background:var(--bg-elevated);color:var(--muted);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;transition:all .15s;}
+  .type-opt-icon{font-size:18px;line-height:1;}
+  .type-opt:hover{border-color:var(--accent);color:var(--text);}
+  .type-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-dark);box-shadow:0 0 0 3px var(--accent-soft);}
+  button.primary{width:100%;padding:16px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;font-size:15.5px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .2s;margin-top:8px;font-family:inherit;box-shadow:0 8px 24px -10px var(--accent-glow);}
+  button.primary:hover{transform:translateY(-1px);box-shadow:0 12px 28px -8px var(--accent-glow);}
+  button.primary:active{transform:scale(.98);}
+  button.primary:disabled{background:#3A3F4A;box-shadow:none;cursor:not-allowed;}
+
+  .confirm{padding:22px 0 4px;}
+  .check-icon{width:68px;height:68px;border-radius:50%;background:var(--ok-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 0 0 8px rgba(46,217,136,.08);animation:popIn .5s ease;}
+  .confirm h2{font-size:19px;font-weight:800;margin:0 0 8px;}
+  .confirm p{color:var(--muted);font-size:14px;margin:0;}
+  .confirm .meta{margin-top:20px;background:var(--bg-elevated);border:1px solid var(--border-soft);border-radius:12px;padding:15px;font-size:13.5px;color:var(--text);text-align:left;}
+  .confirm .meta div{display:flex;justify-content:space-between;padding:4px 0;}
+  .confirm .meta span:first-child{color:var(--muted);}
+
+  .footer-link{margin-top:24px;font-size:12.5px;color:var(--muted);text-decoration:none;border-top:1px solid var(--border-soft);padding-top:16px;display:block;transition:color .15s;}
+  .footer-link:hover{color:var(--accent);}
+  .err-msg{color:var(--accent-dark);font-size:12.5px;margin-top:-6px;margin-bottom:10px;min-height:16px;text-align:left;}
+
+  .geo-banner{font-size:12.5px;padding:10px 13px;border-radius:10px;margin-bottom:16px;text-align:left;line-height:1.5;}
+  .geo-banner.checking{background:var(--info-soft);color:var(--info);display:flex;align-items:center;gap:8px;}
+  .geo-banner.ok{background:var(--ok-soft);color:var(--ok);}
+  .geo-banner.blocked{background:var(--accent-soft);color:var(--accent-dark);}
+  .geo-spin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(52,87,213,.25);border-top-color:var(--info);animation:spin .7s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .geo-retry{margin-left:6px;border:none;background:var(--accent-dark);color:#fff;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:inherit;}
+
+  .app-shell{display:flex;min-height:100vh;width:100%;}
+  .sidebar{width:220px;flex-shrink:0;background:linear-gradient(180deg,#0B2A43,#0E3552);display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .sidebar-logo{display:flex;align-items:center;gap:8px;padding:0 6px 20px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);}
+  .sidebar-logo img{height:20px;filter:brightness(0) invert(1);opacity:.92;}
+  .sidebar-logo .div{width:1px;height:16px;background:rgba(255,255,255,.25);}
+  .sidebar-title{font-size:12.5px;font-weight:800;color:#fff;letter-spacing:-.01em;padding:0 6px 16px;}
+  .sidebar-nav{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .sidebar-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;border:none;background:transparent;color:#9FB4C8;font-size:13px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit;transition:all .15s;}
+  .sidebar-item svg{flex-shrink:0;}
+  .sidebar-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+  .sidebar-item.active{background:#F2A93B;color:#0B2A43;box-shadow:0 4px 12px -4px rgba(242,169,59,.5);}
+  .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:10px 4px;}
+  .sidebar-submenu{flex-direction:column;gap:2px;padding-left:14px;margin-top:2px;}
+  .sidebar-item.sub{font-size:12px;padding:8px 12px;color:#8AA0B5;}
+  .sidebar-item.sub.active{background:rgba(242,169,59,.18);color:#F2A93B;}
+
+  .insights-table-wrap{overflow-x:auto;border:1px solid var(--border-soft);border-radius:14px;background:#fff;}
+  .insights-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .insights-table thead th{text-align:left;padding:12px 16px;background:var(--bg-elevated);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:1px solid var(--border-soft);white-space:nowrap;}
+  .insights-table tbody td{padding:11px 16px;border-bottom:1px solid var(--border-soft);white-space:nowrap;}
+  .insights-table tbody tr:last-child td{border-bottom:none;}
+  .insights-table tbody tr:hover{background:var(--bg-elevated);}
+  .insights-table td.mono{font-family:'JetBrains Mono',monospace;font-weight:700;}
+  .insights-status-badge{font-size:10px;font-weight:800;padding:4px 11px;border-radius:99px;text-transform:uppercase;}
+  .insights-status-badge.esperando{background:var(--accent-soft);color:var(--accent-dark);}
+  .insights-status-badge.en_descarga{background:var(--warn-soft);color:var(--warn);}
+  .insights-status-badge.despachado{background:var(--ok-soft);color:var(--ok);}
+  .insights-table-count{padding:12px 16px;font-size:11.5px;color:var(--muted);text-align:right;}
+  .sidebar-footer{border-top:1px solid rgba(255,255,255,.1);padding-top:14px;margin-top:10px;}
+  .sidebar-user{display:flex;align-items:center;gap:9px;padding:6px;margin-bottom:8px;}
+  .sidebar-user-avatar{width:30px;height:30px;border-radius:50%;background:#F2A93B;color:#0B2A43;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
+  .sidebar-user-name{color:#fff;font-size:12.5px;font-weight:700;}
+  .sidebar-user-role{color:#9FB4C8;font-size:10.5px;}
+
+  .main-area{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .filter-bar{background:#fff;border-bottom:1px solid var(--border-soft);padding:14px 26px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:9;}
+  .filter-bar .fb-title{font-size:17px;font-weight:800;color:var(--text);margin-right:14px;white-space:nowrap;}
+  .fb-select{padding:9px 13px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg-elevated);font-size:12.5px;font-weight:600;color:var(--text);font-family:inherit;cursor:pointer;}
+  .fb-search{padding:9px 13px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg-elevated);font-size:12.5px;font-family:inherit;min-width:170px;margin-left:auto;}
+
+  .week-strip{background:#fff;border-bottom:1px solid var(--border-soft);padding:12px 26px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .week-strip .today-btn{padding:8px 16px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg-elevated);font-weight:700;font-size:12.5px;color:var(--text);cursor:pointer;font-family:inherit;}
+  .week-strip .today-btn:hover{border-color:var(--accent);}
+  .week-strip .cur-date{font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;}
+  .week-strip .wk-nav{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px 6px;}
+  .week-strip .wk-nav:hover{color:var(--accent);}
+  .week-days{display:flex;gap:6px;margin-left:auto;}
+  .week-day-btn{display:flex;flex-direction:column;align-items:center;padding:6px 13px;border-radius:9px;border:1.5px solid transparent;background:transparent;cursor:pointer;font-family:inherit;}
+  .week-day-btn .wd-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+  .week-day-btn .wd-num{font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px;}
+  .week-day-btn:hover{background:var(--bg-elevated);}
+  .week-day-btn.active{background:var(--accent-soft);border-color:var(--accent);}
+  .week-day-btn.active .wd-name,.week-day-btn.active .wd-num{color:var(--accent-dark);}
+
+  .category-tabs{display:flex;gap:10px;padding:16px 26px 0;flex-wrap:wrap;}
+  .cat-tab{padding:14px 10px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-weight:700;font-size:13px;text-align:center;cursor:pointer;font-family:inherit;flex:1;min-width:120px;transition:all .15s;}
+  .cat-tab.active{background:var(--info-soft);border-color:var(--info);color:var(--info);}
+
+  .cal-wrap{padding:16px 26px 40px;}
+  .cal-layout{display:flex;gap:16px;align-items:flex-start;}
+  .cal-grid-scroll{flex:1;min-width:0;overflow-x:auto;}
+  .cal-grid{display:grid;border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;background:#fff;min-width:600px;}
+  .cal-head-row{display:contents;}
+  .cal-cell-head{background:var(--bg-elevated);padding:10px 8px;font-size:11.5px;font-weight:800;color:var(--muted);text-align:center;border-bottom:1px solid var(--border-soft);border-right:1px solid var(--border-soft);position:sticky;top:0;}
+  .cal-hour-label{background:var(--bg-elevated);padding:8px;font-size:11px;font-weight:700;color:var(--muted);border-right:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);text-align:right;white-space:nowrap;}
+  .cal-cell{border-right:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);padding:4px;min-height:58px;display:flex;flex-direction:column;gap:4px;}
+  .load-card{border-radius:7px;border:1.5px solid var(--info);background:var(--info-soft);padding:6px 8px;font-size:10.5px;cursor:pointer;transition:transform .12s;animation:fadeIn .3s ease;}
+  .load-card:hover{transform:scale(1.03);}
+  .load-card.despachado{border-color:var(--ok);background:var(--ok-soft);}
+  .load-card.en_descarga{border-color:var(--warn);background:var(--warn-soft);}
+  .load-card.en_descarga .lc-badge{background:var(--warn);}
+  .load-card .lc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
+  .load-card .lc-plate{font-weight:800;font-family:'JetBrains Mono',monospace;font-size:11.5px;}
+  .load-card .lc-badge{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:99px;text-transform:uppercase;}
+  .load-card.despachado .lc-badge{background:var(--ok);color:#fff;}
+  .load-card:not(.despachado) .lc-badge{background:var(--info);color:#fff;}
+  .load-card .lc-prov{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+
+
+  .cal-empty{padding:60px 20px;text-align:center;color:var(--muted);}
+  .cal-empty .big{font-weight:700;color:var(--text);margin-bottom:6px;font-size:15px;}
+
+  .cal-unassigned-panel{width:270px;flex-shrink:0;background:var(--warn-soft);border:1px solid rgba(183,121,31,.3);border-radius:12px;padding:14px;}
+  .cal-unassigned-head{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--warn);}
+  .cal-unassigned-count{display:inline-block;margin:8px 0 12px;font-size:10.5px;font-weight:700;color:var(--warn);background:#fff;padding:3px 10px;border-radius:99px;}
+  .cal-unassigned-list{display:flex;flex-direction:column;gap:8px;max-height:520px;overflow-y:auto;}
+  .cal-unassigned-empty{font-size:11px;color:var(--muted);text-align:center;padding:20px 6px;}
+
+  .topbar::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--accent-glow),transparent);}
+  .topbar h1{font-size:17px;font-weight:800;margin:0;background:linear-gradient(135deg,var(--text),#5A6070);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .topbar .live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:700;margin-left:12px;}
+  .topbar .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok-glow);animation:pulse 1.8s infinite;}
+  .topbar .clock{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--gold);margin-left:14px;padding-left:14px;border-left:1px solid var(--border);letter-spacing:.02em;}
+  @keyframes pulse{0%{opacity:1;}50%{opacity:.35;}100%{opacity:1;}}
+  .topbar-right{display:flex;gap:8px;align-items:center;}
+  .icon-btn{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;width:37px;height:37px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:all .15s;}
+  .icon-btn:hover{background:var(--card-hover);color:var(--text);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .icon-btn.active-view{background:var(--accent-soft);color:var(--accent-dark);border-color:var(--accent);}
+
+  .dash-body{padding:26px 28px 60px;max-width:1120px;margin:0 auto;width:100%;}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px;}
+  .cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px;}
+  .stat-card{position:relative;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);overflow:hidden;animation:fadeInUp .45s ease backwards;transition:transform .2s,border-color .2s;}
+  .stat-card:hover{transform:translateY(-3px);border-color:var(--border-soft);}
+  .stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+  .stat-card.c-patio::before{background:var(--accent);box-shadow:0 0 12px var(--accent-glow);}
+  .stat-card.c-despachados::before{background:var(--ok);box-shadow:0 0 12px var(--ok-glow);}
+  .stat-card.c-promedio::before{background:var(--info);}
+  .stat-card.c-hoy::before{background:var(--gold);box-shadow:0 0 12px var(--gold-glow);}
+  .stat-card .top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .stat-card .icon-wrap{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stat-card .icon-wrap svg{width:12px;height:12px;}
+  .stat-card.c-patio .icon-wrap{background:var(--accent-soft);color:var(--accent);}
+  .stat-card.c-despachados .icon-wrap{background:var(--ok-soft);color:var(--ok);}
+  .stat-card.c-promedio .icon-wrap{background:var(--info-soft);color:var(--info);}
+  .stat-card.c-hoy .icon-wrap{background:rgba(232,185,63,.14);color:var(--gold);}
+  .stat-card .num{font-size:21px;font-weight:800;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace;}
+  .stat-card .lbl{font-size:9.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.2;}
+
+  .search-row{display:flex;gap:10px;margin-bottom:18px;}
+  .search-row input{flex:1;padding:12px 15px;border-radius:11px;border:1.5px solid var(--border);font-size:14px;font-family:inherit;background:var(--card);color:var(--text);transition:border-color .2s,box-shadow .2s;}
+  .search-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .search-row input::placeholder{color:#5C6270;}
+
+  .period-tabs{display:inline-flex;background:var(--bg-elevated);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:20px;}
+  .period-tabs button{border:none;background:transparent;padding:9px 17px;font-size:13px;font-weight:600;color:var(--muted);border-radius:8px;cursor:pointer;font-family:inherit;transition:all .2s;}
+  .period-tabs button.active{background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;box-shadow:0 4px 14px -4px var(--accent-glow);}
+  .period-tabs button:not(.active):hover{color:var(--text);}
+
+  .controls-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .day-nav{display:flex;align-items:center;gap:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:11px;padding:6px 8px;margin-bottom:20px;}
+  .day-nav button{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;}
+  .day-nav button:hover:not(:disabled){background:var(--accent);color:#fff;border-color:var(--accent);}
+  .day-nav button:disabled{opacity:.35;cursor:not-allowed;}
+  .day-nav span{font-size:12.5px;font-weight:700;color:var(--text);min-width:150px;text-align:center;}
+
+  .layout-toggle{width:44px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+  .layout-toggle:hover{color:var(--text);border-color:var(--accent);}
+  .layout-toggle.active-view{background:var(--accent-soft);color:var(--accent-dark);border-color:var(--accent);}
+
+  .cards-list{display:flex;flex-direction:column;gap:10px;}
+
+  .type-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;align-items:start;width:100%;}
+
+  .type-column{background:rgba(255,255,255,.55);backdrop-filter:blur(6px);border:1px solid var(--border-soft);border-radius:16px;padding:14px;}
+  .type-column-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding:2px 6px;}
+  .type-column-head .tc-name{font-weight:800;font-size:13.5px;color:var(--text);display:flex;align-items:center;gap:7px;}
+  .type-column-head .tc-substats{font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;}
+  .type-column-head .tc-count{background:var(--accent);color:#fff;font-weight:800;font-size:11.5px;padding:3px 10px;border-radius:99px;min-width:24px;text-align:center;box-shadow:0 3px 10px -3px var(--accent-glow);flex-shrink:0;}
+  .type-column-stack{display:flex;flex-direction:column;gap:10px;}
+  .type-column-empty{text-align:center;color:var(--muted);font-size:12px;padding:28px 10px;border:1.5px dashed var(--border);border-radius:10px;}
+  @media (max-width: 980px){ .type-columns{grid-template-columns:1fr;} }
+  .cards-list{display:flex;flex-direction:column;gap:10px;}
+
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;}
+  .arrival-card{background:rgba(255,255,255,.78);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:transform .18s,box-shadow .18s,border-color .18s;user-select:none;animation:fadeInUp .4s ease backwards;position:relative;}
+  .arrival-card:hover{transform:translateY(-2px);border-color:rgba(255,59,92,.35);box-shadow:0 4px 14px rgba(0,0,0,.3),0 16px 32px -18px var(--accent-glow);}
+  .arrival-card.pulse{animation:cardPulse .25s ease;}
+  .arrival-card.view-only .card-time-status{cursor:default;}
+  @keyframes cardPulse{0%{transform:scale(1);}50%{transform:scale(.97);}100%{transform:scale(1);}}
+
+  .card-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:13px 13px 10px;}
+  .card-info{flex:1;min-width:0;text-align:left;}
+  .card-company{font-weight:800;font-size:13.5px;color:var(--text);letter-spacing:-.01em;word-break:break-word;}
+  .card-subinfo{font-size:10.5px;color:var(--muted);margin-top:3px;word-break:break-word;}
+  .card-info .plate-chip{display:inline-block;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:16px;background:var(--accent-soft);border:1.5px solid rgba(225,29,72,.3);padding:4px 12px;border-radius:8px;color:var(--accent-dark);font-weight:800;letter-spacing:.03em;}
+
+  .card-time-status{flex-shrink:0;text-align:right;padding:2px 4px 2px 8px;border-left:1px solid var(--border-soft);transition:background-color .8s ease;border-radius:8px;}
+  .card-time-status.clickable{cursor:pointer;}
+  .big-time{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.01em;line-height:1;}
+  .card-time-status.despachado .big-time{color:var(--ok);}
+  .card-time-status.en_descarga .big-time{color:var(--warn);}
+  .big-date{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:3px;}
+
+  .card-status-badge{margin:7px 0 0;width:fit-content;margin-left:auto;font-size:9px;font-weight:700;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.02em;}
+  .card-status-badge.esperando{background:var(--accent-soft);color:var(--accent-dark);border:1px solid rgba(225,29,72,.25);}
+  .card-status-badge.despachado{background:var(--ok-soft);color:var(--ok);border:1px solid rgba(46,217,136,.3);}
+  .card-status-badge.en_descarga{background:var(--warn-soft);color:var(--warn);border:1px solid rgba(183,121,31,.3);}
+
+  .card-details-toggle{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;background:var(--bg-elevated);border:none;border-top:1px solid var(--border-soft);padding:6px;font-size:10px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:color .15s;}
+  .card-details-toggle:hover{color:var(--accent-dark);}
+  .card-details-toggle .chev{transition:transform .2s;}
+  .card-details-toggle.open .chev{transform:rotate(180deg);}
+  .card-details{max-height:0;overflow:hidden;font-size:9.5px;color:var(--muted);text-align:center;line-height:1.6;background:var(--bg-elevated);transition:max-height .25s ease,padding .25s ease;padding:0 10px;}
+  .card-details.open{max-height:80px;padding:8px 10px;}
+  .card-details b{color:var(--text);font-weight:700;}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);grid-column:1/-1;animation:fadeIn .4s ease;}
+  .empty-state .big{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+
+  .gate-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gate-card{background:rgba(255,255,255,.78);backdrop-filter:blur(18px);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:34px;width:100%;max-width:340px;text-align:center;animation:fadeInUp .4s ease;}
+  .gate-card h2{font-size:17px;margin:0 0 18px;font-weight:800;}
+  .err{color:var(--accent-dark);font-size:12.5px;margin-top:8px;min-height:16px;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,22,28,.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;animation:fadeIn .2s ease;}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:18px;max-width:440px;width:100%;padding:28px;max-height:88vh;overflow-y:auto;animation:popIn .25s ease;display:flex;flex-direction:column;}
+  .modal h3{margin:0 0 4px;font-size:16.5px;font-weight:800;}
+  .modal .hint{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
+  .modal .section-label{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-dark);margin:18px 0 6px;padding-top:14px;border-top:1px solid var(--border-soft);}
+  .modal .section-label:first-of-type{margin-top:0;padding-top:0;border-top:none;}
+  .checkbox-field{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;cursor:pointer;}
+  .multiselect-box{border:1.5px solid var(--border);border-radius:11px;padding:10px 13px;background:var(--bg-elevated);max-height:160px;overflow-y:auto;}
+  .multiselect-box .checkbox-field{margin-bottom:4px;font-weight:500;font-size:13px;}
+  .checkbox-field input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .geo-hint{font-size:12px;margin:-2px 0 14px;min-height:14px;color:var(--muted);}
+  .field-hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4;}
+  .geo-hint.ok{color:var(--ok);}
+  .geo-hint.err{color:var(--accent-dark);}
+  .modal .field{margin-bottom:14px;}
+  .modal .field input{padding:11px 13px;font-size:13.5px;}
+  .modal-actions{display:flex;gap:10px;margin:20px -28px -28px;padding:14px 28px 20px;position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--border-soft);border-radius:0 0 18px 18px;}
+  .config-tab-bar{display:flex;background:linear-gradient(180deg,#0B2A43,#0E3552);border-radius:12px;overflow:hidden;flex-wrap:wrap;}
+  .config-tab-btn{flex:1 1 33%;min-width:100px;padding:16px 8px;background:transparent;border:none;border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);color:#9FB4C8;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;font-family:inherit;line-height:1.4;transition:all .15s;}
+  .config-tab-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+  .btn-secondary{flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-elevated);color:var(--text);font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .btn-secondary:hover{background:var(--card-hover);}
+  .btn-primary-sm{flex:1;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px -8px var(--accent-glow);}
+  .qr-box{text-align:center;padding:10px 0;}
+  .qr-box img{width:220px;height:220px;border-radius:12px;border:1px solid var(--border);background:#fff;padding:8px;}
+  .qr-url{font-size:11.5px;color:var(--muted);word-break:break-all;margin-top:12px;font-family:'JetBrains Mono',monospace;background:var(--bg-elevated);border:1px solid var(--border-soft);padding:9px 11px;border-radius:8px;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);border:1px solid var(--border);color:#fff;padding:12px 22px;border-radius:99px;font-size:13px;font-weight:600;box-shadow:var(--shadow);z-index:60;opacity:0;transition:opacity .25s,transform .25s;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+  .toast::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:8px;box-shadow:0 0 8px var(--ok-glow);}
+
+  .role-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.03em;margin-left:10px;}
+  .role-badge.admin{background:var(--accent-soft);color:var(--accent-dark);}
+  .role-badge.viewer{background:var(--info-soft);color:var(--info);}
+
+  .card-actions{display:flex;justify-content:center;gap:6px;margin-top:8px;}
+  .card-action-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--muted);cursor:pointer;transition:all .15s;}
+  .card-action-btn:hover{background:var(--card-hover);color:var(--text);border-color:var(--accent);}
+  .card-action-btn.whatsapp:hover{color:#25D366;border-color:#25D366;background:rgba(37,211,102,.1);}
+  .card-action-btn.danger:hover{color:var(--accent-dark);border-color:var(--accent);background:var(--accent-soft);}
+
+  .admin-list{max-height:220px;overflow-y:auto;margin-bottom:14px;border:1px solid var(--border-soft);border-radius:10px;}
+  .admin-list-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border-soft);font-size:13px;}
+  .role-picker{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;}
+  .role-option{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;cursor:pointer;background:var(--bg-elevated);transition:all .15s;}
+  .role-option input{margin-top:3px;flex-shrink:0;}
+  .role-option .ro-name{font-weight:800;font-size:13px;color:var(--text);}
+  .role-option .ro-desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+  .role-option:hover{border-color:var(--accent);}
+  .role-option.selected{border-color:var(--accent);background:var(--accent-soft);}
+  .role-option.selected .ro-name{color:var(--accent-dark);}
+  .admin-list-row:last-child{border-bottom:none;}
+  .admin-list-row .name{font-weight:600;}
+  .admin-list-row .sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .admin-list-row .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;}
+  .admin-list-row .del-btn:hover{color:var(--accent-dark);background:var(--accent-soft);}
+  .empty-list{padding:16px;text-align:center;color:var(--muted);font-size:12.5px;}
+  .inline-add-row{display:flex;gap:8px;margin-bottom:14px;}
+  .inline-add-row select{padding:11px 8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-elevated);font-family:inherit;font-size:13px;color:var(--text);}
+  textarea.sugg-input{width:100%;min-height:100px;padding:13px 14px;border-radius:11px;border:1.5px solid var(--border);font-size:14px;font-family:inherit;background:var(--bg-elevated);color:var(--text);resize:vertical;}
+  textarea.sugg-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb o1"></div>
+<div class="bg-orb o2"></div>
+<div class="bg-orb o3"></div>
+<div class="bg-orb o4"></div>
+<div class="bg-orb o5"></div>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+document.addEventListener('mousemove', (e)=>{
+  const x = (e.clientX / window.innerWidth - .5) * 26;
+  const y = (e.clientY / window.innerHeight - .5) * 26;
+  document.querySelectorAll('.bg-orb').forEach((el,i)=>{
+    const factor = 1 + (i%3)*0.4;
+    el.style.marginLeft = (x*factor)+'px';
+    el.style.marginTop = (y*factor)+'px';
+  });
+});
+</script>
+
+<script>
+const app = document.getElementById('app');
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function pad(n){return n.toString().padStart(2,'0');}
+function fmtDateLabel(key){
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y,m-1,d);
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return dias[dt.getDay()]+', '+dt.getDate()+' de '+meses[dt.getMonth()];
+}
+function fmtShortDate(dateKey){
+  const [y,m,d] = dateKey.split('-').map(Number);
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return d+' '+meses[m-1];
+}
+
+function getToken(){ return sessionStorage.getItem('tc_token') || ''; }
+function getRole(){ return sessionStorage.getItem('tc_role') || ''; }
+function getUsername(){ return sessionStorage.getItem('tc_username') || ''; }
+function isAdmin(){ return getRole() === 'admin'; }
+
+const ROLE_INFO = {
+  admin:     { label: 'Administración', desc: 'Crear/editar/eliminar citas, muelles, categorías, campos y usuarios.', changeStatus:true, editFields:true, delete:true, manage:true },
+  operador:  { label: 'Operador', desc: 'Crear/editar registros y cambiar su estado. Sin acceso a configuración ni usuarios.', changeStatus:true, editFields:true, delete:false, manage:false },
+  asistente: { label: 'Asistente', desc: 'Solo puede cambiar el estado de los registros (esperando / en descarga / despachado).', changeStatus:true, editFields:false, delete:false, manage:false },
+  viewer:    { label: 'Espectador', desc: 'Solo lectura. No se permiten acciones de creación ni edición.', changeStatus:false, editFields:false, delete:false, manage:false },
+  conductor: { label: 'Conductor de patio', desc: 'Acceso limitado, solo de consulta.', changeStatus:false, editFields:false, delete:false, manage:false }
+};
+function rolePerms(){ return ROLE_INFO[getRole()] || ROLE_INFO.viewer; }
+function roleLabel(){ return (ROLE_INFO[getRole()] || ROLE_INFO.viewer).label; }
+function canChangeStatus(){ return rolePerms().changeStatus; }
+function canEditFields(){ return rolePerms().editFields; }
+function canDeleteRecords(){ return rolePerms().delete; }
+function canManage(){ return rolePerms().manage; }
+function clearSession(){ sessionStorage.removeItem('tc_token'); sessionStorage.removeItem('tc_role'); sessionStorage.removeItem('tc_username'); }
+
+async function apiGet(path){
+  let r;
+  try{
+    r = await fetch(path, { headers: getToken() ? { 'Authorization': 'Bearer '+getToken() } : {} });
+  }catch(e){
+    throw new Error('No se pudo conectar con el servidor. Revisa tu conexión o que el sitio esté bien desplegado en Netlify.');
+  }
+  if(r.status === 403){ clearSession(); location.hash='panel'; throw new Error('Tu sesión expiró, inicia sesión de nuevo.'); }
+  if(!r.ok) throw new Error('Error al consultar '+path);
+  return r.json();
+}
+async function apiPost(path, body){
+  let r;
+  try{
+    r = await fetch(path, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', ...(getToken() ? {'Authorization':'Bearer '+getToken()} : {}) },
+      body: JSON.stringify(body)
+    });
+  }catch(e){
+    throw new Error('No se pudo conectar con el servidor (Failed to fetch). Verifica que el sitio esté desplegado en Netlify con las funciones activas, y que no haya un bloqueador de contenido interfiriendo.');
+  }
+  const data = await r.json();
+  if(!r.ok) throw new Error(data.error || 'Error al guardar');
+  return data;
+}
+async function apiPatch(path, body){
+  const r = await fetch(path, {
+    method:'PATCH',
+    headers:{ 'Content-Type':'application/json', ...(getToken() ? {'Authorization':'Bearer '+getToken()} : {}) },
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data.error || 'Error al actualizar');
+  return data;
+}
+async function apiDelete(path, body){
+  const r = await fetch(path, {
+    method:'DELETE',
+    headers:{ 'Content-Type':'application/json', ...(getToken() ? {'Authorization':'Bearer '+getToken()} : {}) },
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data.error || 'Error al eliminar');
+  return data;
+}
+
+async function getSettings(){ try{ return await apiGet('/api/settings'); }catch(e){ return {}; } }
+async function saveSettings(obj){ return apiPost('/api/settings', obj); }
+async function loadArrivals(){ try{ return await apiGet('/api/arrivals'); }catch(e){ return []; } }
+async function loadFormFields(){ try{ return await apiGet('/api/formfields'); }catch(e){ return []; } }
+async function loadDocks(){ try{ return await apiGet('/api/docks'); }catch(e){ return []; } }
+
+// ---------------- ROUTING ----------------
+function route(){
+  if(getToken()) renderDashboard();
+  else renderLogin();
+}
+window.addEventListener('hashchange', route);
+
+// ---------------- CHECK-IN VIEW ----------------
+let geoState = { ok: true, checked: false, distance: null, coords: null };
+let selectedTransportType = null;
+let checkinCustomFields = [];
+let checkinCategories = [];
+let checkinFieldRequired = {};
+
+function haversineMeters(lat1, lng1, lat2, lng2){
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function renderCheckin(){
+  document.body.classList.remove('dashboard-bg');
+  selectedTransportType = null;
+  app.innerHTML = `
+    <div class="checkin-wrap">
+      <div class="checkin-card">
+        <div class="logo-row">
+          <img src="/assets/novex.png" alt="NOVEX">
+          <div class="logo-divider"></div>
+          <img src="/assets/vidri.png" alt="VIDRI">
+        </div>
+        <div class="brand-tag"><span class="dot"></span>CD NOVEX</div>
+        <h1 class="title">Registro de llegada</h1>
+        <p class="sub">Escanea, ingresa tus datos y quedas registrado. Sin filas, sin llamadas.</p>
+        <div id="geoBanner"></div>
+        <div id="formArea">
+          <div class="field"><label id="lblProvider">Proveedor</label><input id="inProvider" type="text" placeholder="Ej. Transportes García" autocomplete="off"></div>
+          <div class="field"><label id="lblDriverName">Nombre del motorista</label><input id="inName" type="text" placeholder="Ej. Juan Pérez" autocomplete="off"></div>
+          <div class="field"><label id="lblPhone">Teléfono</label><input id="inPhone" type="tel" placeholder="Ej. +503 7123-4567" autocomplete="off"></div>
+          <div class="field"><label id="lblPlate">Placa</label><input id="inPlate" type="text" placeholder="Ej. N-1234" autocomplete="off"></div>
+          <div class="field">
+            <label id="lblTransportType">Tipo de transporte</label>
+            <div class="type-options" id="typeOptions"></div>
+          </div>
+          <div id="customFieldsArea"></div>
+          <div class="err-msg" id="formErr"></div>
+          <button class="primary" id="btnSubmit">Registrar llegada</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnSubmit').onclick = submitArrival;
+  document.getElementById('inPlate').addEventListener('keydown', e=>{ if(e.key==='Enter') submitArrival(); });
+
+  Promise.all([getFieldLabels(), getFieldRequired()]).then(([labels, required])=>{
+    checkinFieldRequired = required;
+    const opt = (k) => required[k] ? '' : ' <span style="text-transform:none;font-weight:500;color:var(--muted);">(opcional)</span>';
+    document.getElementById('lblProvider').innerHTML = labels.provider + opt('provider');
+    document.getElementById('lblDriverName').innerHTML = labels.driverName + opt('driverName');
+    document.getElementById('lblPhone').innerHTML = labels.phone + opt('phone');
+    document.getElementById('lblPlate').innerHTML = labels.plate + opt('plate');
+    document.getElementById('lblTransportType').innerHTML = labels.transportType + opt('transportType');
+  });
+  getTransportCategories().then(categories=>{
+    checkinCategories = categories;
+    document.getElementById('typeOptions').innerHTML = categories.map(c=>`
+      <button type="button" class="type-opt" data-type="${c}">
+        <span class="type-opt-icon">${categoryIcon(c)}</span>
+        <span>${c}</span>
+      </button>
+    `).join('');
+    document.querySelectorAll('.type-opt').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.type-opt').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedTransportType = btn.dataset.type;
+      });
+    });
+  });
+
+  loadFormFields().then(fields=>{
+    checkinCustomFields = fields;
+    if(fields.length === 0) return;
+    document.getElementById('customFieldsArea').innerHTML = fields.map(f=>customFieldInputHtml(f)).join('');
+    fields.forEach(f=>{
+      if(f.type === 'file'){
+        const inp = document.getElementById('custom_'+f.id);
+        inp.addEventListener('change', ()=>{
+          const file = inp.files[0];
+          const hint = document.getElementById('filehint_'+f.id);
+          if(!file){ inp.dataset.fileData = ''; if(hint) hint.textContent=''; return; }
+          if(file.size > 900*1024){
+            toast('El archivo es muy grande (máx. ~900 KB)');
+            inp.value = ''; inp.dataset.fileData = ''; if(hint) hint.textContent='';
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = ()=>{ inp.dataset.fileData = reader.result; if(hint) hint.textContent = file.name; };
+          reader.readAsDataURL(file);
+        });
+      }
+    });
+  });
+  initGeofenceCheck();
+}
+
+function customFieldInputHtml(f){
+  if(f.type === 'textarea'){
+    return `<div class="field"><label>${f.label}</label><textarea id="custom_${f.id}" class="sugg-input" style="min-height:70px;"></textarea></div>`;
+  }
+  if(f.type === 'select'){
+    return `<div class="field"><label>${f.label}</label>
+      <select id="custom_${f.id}" style="width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid var(--border);font-family:inherit;font-size:13.5px;background:var(--bg-elevated);color:var(--text);">
+        <option value="">Selecciona...</option>
+        ${(f.options||[]).map(o=>`<option value="${o}">${o}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  if(f.type === 'multiselect'){
+    return `<div class="field"><label>${f.label}</label>
+      <div class="multiselect-box" id="custom_${f.id}">
+        ${(f.options||[]).map((o,i)=>`
+          <label class="checkbox-field" style="margin:4px 0;"><input type="checkbox" value="${o}" data-ms="${f.id}"> <span>${o}</span></label>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+  if(f.type === 'combo'){
+    return `<div class="field"><label>${f.label}</label>
+      <input id="custom_${f.id}" type="text" list="dl_${f.id}" autocomplete="off">
+      <datalist id="dl_${f.id}">${(f.options||[]).map(o=>`<option value="${o}">`).join('')}</datalist>
+    </div>`;
+  }
+  if(f.type === 'file'){
+    return `<div class="field"><label>${f.label}</label>
+      <input id="custom_${f.id}" type="file" accept="image/*,.pdf">
+      <div class="field-hint" id="filehint_${f.id}"></div>
+    </div>`;
+  }
+  if(f.type === 'date'){
+    return `<div class="field"><label>${f.label}</label><input id="custom_${f.id}" type="date"></div>`;
+  }
+  if(f.type === 'number'){
+    return `<div class="field"><label>${f.label}</label><input id="custom_${f.id}" type="number" autocomplete="off"></div>`;
+  }
+  return `<div class="field"><label>${f.label}</label><input id="custom_${f.id}" type="${f.type==='tel'?'tel':'text'}" autocomplete="off"></div>`;
+}
+
+async function initGeofenceCheck(){
+  const settings = await getSettings();
+  const banner = document.getElementById('geoBanner');
+  const btn = document.getElementById('btnSubmit');
+  if(!banner || !btn) return;
+
+  if(!settings.geofenceEnabled || settings.geofenceLat==null || settings.geofenceLng==null){
+    geoState = { ok:true, checked:true, distance:null, coords:null };
+    return;
+  }
+
+  btn.disabled = true;
+  banner.innerHTML = `<div class="geo-banner checking"><span class="geo-spin"></span>Verificando tu ubicación...</div>`;
+
+  runGeofenceCheck(settings);
+}
+
+function runGeofenceCheck(settings){
+  const banner = document.getElementById('geoBanner');
+  const btn = document.getElementById('btnSubmit');
+  if(!navigator.geolocation){
+    geoState = { ok:false, checked:true, distance:null, coords:null };
+    banner.innerHTML = `<div class="geo-banner blocked">Tu navegador no permite verificar la ubicación, así que no podemos confirmar que estás en CD NOVEX.</div>`;
+    btn.disabled = true;
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos)=>{
+      const dist = haversineMeters(pos.coords.latitude, pos.coords.longitude, settings.geofenceLat, settings.geofenceLng);
+      const ok = dist <= settings.geofenceRadius;
+      geoState = { ok, checked:true, distance:Math.round(dist), coords:{lat:pos.coords.latitude, lng:pos.coords.longitude} };
+      if(ok){
+        banner.innerHTML = `<div class="geo-banner ok">Ubicación verificada — estás dentro del área de CD NOVEX.</div>`;
+        btn.disabled = false;
+      } else {
+        banner.innerHTML = `<div class="geo-banner blocked">Estás a ${Math.round(dist)} m del centro. Debes estar a menos de ${settings.geofenceRadius} m para registrarte. <button type="button" class="geo-retry" id="geoRetry">Reintentar</button></div>`;
+        btn.disabled = true;
+        document.getElementById('geoRetry').onclick = ()=>runGeofenceCheck(settings);
+      }
+    },
+    ()=>{
+      geoState = { ok:false, checked:true, distance:null, coords:null };
+      banner.innerHTML = `<div class="geo-banner blocked">No pudimos acceder a tu ubicación. Activa el permiso de ubicación de tu navegador e intenta de nuevo. <button type="button" class="geo-retry" id="geoRetry">Reintentar</button></div>`;
+      btn.disabled = true;
+      document.getElementById('geoRetry').onclick = ()=>runGeofenceCheck(settings);
+    },
+    { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+  );
+}
+
+async function submitArrival(){
+  const provider = document.getElementById('inProvider').value.trim();
+  const driverName = document.getElementById('inName').value.trim();
+  const phone = document.getElementById('inPhone').value.trim();
+  const plate = document.getElementById('inPlate').value.trim();
+  const errEl = document.getElementById('formErr');
+  errEl.textContent = '';
+  if(!geoState.ok){
+    errEl.textContent = 'No puedes registrarte fuera del área permitida.';
+    return;
+  }
+  const req = Object.assign({}, DEFAULT_FIELD_REQUIRED, checkinFieldRequired);
+  const values = { provider, driverName, phone, plate, transportType: selectedTransportType || '' };
+  const missingLabels = [];
+  const labelEls = { provider:'lblProvider', driverName:'lblDriverName', phone:'lblPhone', plate:'lblPlate', transportType:'lblTransportType' };
+  for(const key of Object.keys(req)){
+    if(req[key] && !values[key]){
+      const el = document.getElementById(labelEls[key]);
+      missingLabels.push(el ? el.textContent.replace('(opcional)','').trim() : key);
+    }
+  }
+  if(missingLabels.length > 0){
+    errEl.textContent = 'Completa: ' + missingLabels.join(', ');
+    return;
+  }
+  const customFields = {};
+  for(const f of checkinCustomFields){
+    let val = '';
+    if(f.type === 'multiselect'){
+      const checked = Array.from(document.querySelectorAll(`[data-ms="${f.id}"]:checked`)).map(c=>c.value);
+      val = checked.join(', ');
+    } else if(f.type === 'file'){
+      const inp = document.getElementById('custom_'+f.id);
+      val = (inp && inp.dataset.fileData) ? inp.dataset.fileData : '';
+    } else {
+      val = (document.getElementById('custom_'+f.id)?.value || '').trim();
+    }
+    if(f.required && !val){
+      errEl.textContent = 'Completa el campo "'+f.label+'"';
+      return;
+    }
+    if(val) customFields[f.label] = val;
+  }
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = 'Registrando...';
+
+  try{
+    const record = await apiPost('/api/arrivals', {
+      provider, driverName, plate, phone, transportType: selectedTransportType, customFields,
+      geoLat: geoState.coords ? geoState.coords.lat : null,
+      geoLng: geoState.coords ? geoState.coords.lng : null,
+      geoDistance: geoState.distance
+    });
+    const card = document.querySelector('.checkin-card');
+    card.innerHTML = `
+      <div class="confirm">
+        <div class="check-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#2ED988" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h2>Llegada registrada</h2>
+        <p>${driverName ? 'Gracias, '+driverName+'. ' : ''}El equipo de la torre de control ya fue notificado.</p>
+        <div class="meta">
+          ${provider ? `<div><span>Proveedor</span><span>${provider}</span></div>` : ''}
+          ${driverName ? `<div><span>Motorista</span><span>${driverName}</span></div>` : ''}
+          ${phone ? `<div><span>Teléfono</span><span>${phone}</span></div>` : ''}
+          ${plate ? `<div><span>Placa</span><span>${plate}</span></div>` : ''}
+          ${selectedTransportType ? `<div><span>Tipo</span><span>${selectedTransportType}</span></div>` : ''}
+          <div><span>Hora</span><span>${record.time}</span></div>
+        </div>
+      </div>
+    `;
+  }catch(e){
+    errEl.textContent = e.message || 'No se pudo registrar. Intenta de nuevo.';
+    btn.disabled = false; btn.textContent = 'Registrar llegada';
+  }
+}
+
+// ---------------- LOGIN ----------------
+function renderLogin(){
+  document.body.classList.remove('dashboard-bg');
+  app.innerHTML = `
+    <div class="checkin-wrap">
+      <div class="checkin-card login-card">
+        <div class="logo-row">
+          <img src="/assets/novex.png" alt="NOVEX">
+          <div class="logo-divider"></div>
+          <img src="/assets/vidri.png" alt="VIDRI">
+        </div>
+        <div class="login-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h1 class="title">Iniciar sesión</h1>
+        <p class="sub">Torre de Control · CD NOVEX. Ingresa tus credenciales para continuar.</p>
+        <p style="font-size:11.5px;color:var(--muted);margin:-10px 0 20px;background:var(--bg-elevated);padding:9px 12px;border-radius:9px;">Primera vez: usuario <b>admin</b>, contraseña <b>Torre2026</b></p>
+        <div class="field"><label>Usuario</label><input id="loginUser" type="text" placeholder="admin" autocomplete="off"></div>
+        <div class="field"><label>Contraseña</label><input id="loginPw" type="password" placeholder="••••••••"></div>
+        <button class="primary" id="btnEnter">Entrar</button>
+        <div class="err-msg" id="loginErr" style="text-align:center;margin-top:8px;"></div>
+      </div>
+    </div>
+  `;
+  const doLogin = async ()=>{
+    const username = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPw').value;
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = '';
+    if(!username || !password){ errEl.textContent = 'Ingresa usuario y contraseña'; return; }
+    const btn = document.getElementById('btnEnter');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try{
+      const res = await apiPost('/api/auth', { username, password });
+      sessionStorage.setItem('tc_token', res.token);
+      sessionStorage.setItem('tc_role', res.role);
+      sessionStorage.setItem('tc_username', res.username);
+      renderDashboard();
+    }catch(e){
+      errEl.textContent = e.message || 'No se pudo iniciar sesión';
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  };
+  document.getElementById('btnEnter').onclick = doLogin;
+  document.getElementById('loginPw').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+}
+
+// ---------------- DASHBOARD ----------------
+let refreshTimer = null;
+let clockTimer = null;
+let cachedArrivals = [];
+let currentPeriod = 'day';
+let viewOnlyMode = false;
+let prevKpiValues = {};
+let dayOffset = 0; // 0 = hoy, -1 = ayer, +1 = mañana...
+let cardViewMode = 'grid'; // 'grid' | 'list'
+
+function nowElSalvador(){ return new Date(Date.now() - 6*60*60*1000); }
+
+function updateClock(){
+  const el = document.getElementById('liveClock');
+  if(!el) return;
+  const n = nowElSalvador();
+  const dias = ['dom','lun','mar','mié','jue','vie','sáb'];
+  el.textContent = `${dias[n.getUTCDay()]} ${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())}`;
+}
+
+function localDateParts(offsetDays){
+  const local = new Date(nowElSalvador().getTime() + (offsetDays||0)*24*60*60*1000);
+  return { y: local.getUTCFullYear(), m: local.getUTCMonth(), d: local.getUTCDate(), key: local.toISOString().slice(0,10) };
+}
+
+function dayLabel(offsetDays){
+  const parts = localDateParts(offsetDays);
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const dt = new Date(Date.UTC(parts.y, parts.m, parts.d));
+  let label = `${dias[dt.getUTCDay()]}, ${parts.d} de ${meses[parts.m]}`;
+  if(offsetDays === 0) label = 'Hoy · ' + label;
+  return label;
+}
+
+function updateDayNav(){
+  const lbl = document.getElementById('dayLabel');
+  const nextBtn = document.getElementById('dayNext');
+  if(!lbl || !nextBtn) return;
+  lbl.textContent = dayLabel(dayOffset);
+  nextBtn.disabled = dayOffset >= 0;
+}
+
+function inPeriod(r, period){
+  if(period === 'all') return true;
+  const parts = localDateParts(period === 'day' ? dayOffset : 0);
+  if(period === 'day') return r.date === parts.key;
+  if(period === 'week'){
+    const weekAgo = Date.now() - 7*24*60*60*1000;
+    return r.ts >= weekAgo;
+  }
+  if(period === 'month'){
+    const [ry, rm] = r.date.split('-').map(Number);
+    return ry === parts.y && (rm-1) === parts.m;
+  }
+  return true;
+}
+
+function phoneToWhatsApp(phone){
+  if(!phone) return '';
+  const trimmed = phone.trim();
+  const digits = trimmed.replace(/[^0-9]/g,'');
+  if(!digits) return '';
+  if(trimmed.startsWith('+')) return digits; // ya incluye código de país (+503, +502, +506...)
+  if(digits.length > 8) return digits; // probablemente ya trae código de país sin el "+"
+  return '503' + digits; // número local de 8 dígitos: se asume El Salvador
+}
+
+function fmtTimeMs(ms){
+  if(!ms) return '';
+  const local = new Date(ms - 6*60*60*1000);
+  return pad(local.getUTCHours())+':'+pad(local.getUTCMinutes());
+}
+
+function fmtDuration(minutes){
+  const m = Math.max(0, Math.round(minutes));
+  if(m < 60) return m + ' min';
+  const h = Math.floor(m/60), rem = m % 60;
+  return h + 'h ' + rem + 'm';
+}
+
+function kpiIcon(name){
+  if(name==='patio') return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.8"/><path d="M15 10h3l3 3v3h-6z" stroke="currentColor" stroke-width="1.8"/><circle cx="7.5" cy="18.5" r="1.7" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="18.5" r="1.7" stroke="currentColor" stroke-width="1.6"/></svg>`;
+  if(name==='check') return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if(name==='timer') return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 3h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+}
+
+function animateCountUp(el, from, to, duration){
+  if(from === to){ el.textContent = to; return; }
+  const start = performance.now();
+  function step(now){
+    const p = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-p, 3);
+    const val = Math.round(from + (to-from)*eased);
+    el.textContent = val;
+    if(p < 1) requestAnimationFrame(step);
+    else el.textContent = to;
+  }
+  requestAnimationFrame(step);
+}
+
+let activeNavView = 'dashboard';
+let perspectivaExpanded = false;
+
+function sidebarIcon(name){
+  const icons = {
+    dashboard: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="3" width="8" height="5" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="12" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="15" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>`,
+    calendar: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    suggest: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    fields: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="16" width="10" height="4" rx="1" stroke="currentColor" stroke-width="1.7"/></svg>`,
+    users: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 8.5a3 3 0 010 5.8M20 20c0-2.8-1.8-5-4.3-5.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+    qr: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="1.8"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z" fill="currentColor"/></svg>`,
+    settings: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.5"/></svg>`,
+    eye: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>`,
+    logout: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    dock: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="7" height="16" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="4" width="7" height="16" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 8v8M17.5 8v8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+    insights: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15l4-5 3 3 5-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  };
+  return icons[name] || '';
+}
+
+let calCategory = 'Todos';
+let calSearchTerm = '';
+let calDockFilter = 'Todos';
+
+async function renderCalendarShell(){
+  const docks = await loadDocks();
+  const categories = await getTransportCategories();
+  document.getElementById('viewContent').innerHTML = `
+    <div class="filter-bar" style="border-top:1px solid var(--border-soft);">
+      <input class="fb-search" id="calSearch" placeholder="Buscar por placa o proveedor...">
+      <select class="fb-select" id="calDockFilterSel">
+        <option value="Todos">Todos los muelles</option>
+        ${docks.map(d=>`<option value="${d}">${d}</option>`).join('')}
+        <option value="S/A">Sin muelle</option>
+      </select>
+    </div>
+    <div class="week-strip">
+      <button class="today-btn" id="calToday">Hoy</button>
+      <span class="cur-date" id="calDateLabel"></span>
+      <button class="wk-nav" id="calWeekPrev" title="Semana anterior">«</button>
+      <button class="wk-nav" id="calDayPrev" title="Día anterior">‹</button>
+      <div class="week-days" id="weekDays"></div>
+      <button class="wk-nav" id="calDayNext" title="Día siguiente">›</button>
+      <button class="wk-nav" id="calWeekNext" title="Semana siguiente">»</button>
+    </div>
+    <div class="category-tabs" id="catTabs">
+      <button class="cat-tab active" data-cat="Todos">Todos</button>
+      ${categories.map(c=>`<button class="cat-tab" data-cat="${c}">${c}</button>`).join('')}
+    </div>
+    <div class="cal-wrap" id="calGridArea"></div>
+  `;
+  document.getElementById('calSearch').addEventListener('input', (e)=>{ calSearchTerm = e.target.value.toLowerCase(); renderCalendarView(); });
+  document.getElementById('calDockFilterSel').value = calDockFilter;
+  document.getElementById('calDockFilterSel').addEventListener('change', (e)=>{ calDockFilter = e.target.value; renderCalendarView(); });
+  document.getElementById('calToday').onclick = ()=>{ dayOffset = 0; renderCalendarShellState(); renderCalendarView(); };
+  document.getElementById('calDayPrev').onclick = ()=>{ dayOffset -= 1; renderCalendarShellState(); renderCalendarView(); };
+  document.getElementById('calDayNext').onclick = ()=>{ dayOffset += 1; renderCalendarShellState(); renderCalendarView(); };
+  document.getElementById('calWeekPrev').onclick = ()=>{ dayOffset -= 7; renderCalendarShellState(); renderCalendarView(); };
+  document.getElementById('calWeekNext').onclick = ()=>{ dayOffset += 7; renderCalendarShellState(); renderCalendarView(); };
+  document.getElementById('catTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.cat-tab');
+    if(!btn) return;
+    document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    calCategory = btn.dataset.cat;
+    renderCalendarView();
+  });
+  renderCalendarShellState();
+}
+
+function renderCalendarShellState(){
+  const parts = localDateParts(dayOffset);
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  document.getElementById('calDateLabel').textContent = `${parts.d} de ${meses[parts.m]} de ${parts.y}`;
+
+  // calcula el lunes de la semana que contiene el día seleccionado
+  const local = new Date(nowElSalvador().getTime() + dayOffset*24*60*60*1000);
+  const dow = local.getUTCDay();
+  const diffToMonday = dow === 0 ? -6 : 1 - dow;
+  const mondayOffset = dayOffset + diffToMonday;
+
+  const dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  let html = '';
+  for(let i=0;i<7;i++){
+    const off = mondayOffset + i;
+    const p = localDateParts(off);
+    const isActive = off === dayOffset;
+    html += `<button type="button" class="week-day-btn ${isActive?'active':''}" data-off="${off}">
+      <span class="wd-name">${dias[i]}</span><span class="wd-num">${p.d}</span>
+    </button>`;
+  }
+  const wd = document.getElementById('weekDays');
+  wd.innerHTML = html;
+  wd.querySelectorAll('.week-day-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      dayOffset = parseInt(btn.dataset.off);
+      renderCalendarShellState();
+      renderCalendarView();
+    });
+  });
+}
+
+const CAL_HOURS = Array.from({length:15}, (_,i)=>i+6); // 06:00 a 20:00
+
+function dockColumnsFor(records, configuredDocks){
+  const docks = new Set(configuredDocks || []);
+  records.forEach(r=>{ if(r.dock) docks.add(String(r.dock)); });
+  let cols = Array.from(docks);
+  if((!configuredDocks || configuredDocks.length === 0) && cols.length === 0) cols = ['1','2','3','4'];
+  cols.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+  return cols;
+}
+
+async function renderCalendarView(){
+  cachedArrivals = await loadArrivals();
+  const configuredDocks = await loadDocks();
+  const parts = localDateParts(dayOffset);
+  let dayRecords = cachedArrivals.filter(r => r.date === parts.key);
+  if(calCategory !== 'Todos') dayRecords = dayRecords.filter(r => r.transportType === calCategory);
+  if(calSearchTerm){
+    dayRecords = dayRecords.filter(r =>
+      (r.plate||'').toLowerCase().includes(calSearchTerm) ||
+      (r.provider||'').toLowerCase().includes(calSearchTerm) ||
+      (r.driverName||'').toLowerCase().includes(calSearchTerm)
+    );
+  }
+  if(calDockFilter !== 'Todos'){
+    dayRecords = dayRecords.filter(r => (r.dock ? String(r.dock) : 'S/A') === calDockFilter);
+  }
+
+  const gridArea = document.getElementById('calGridArea');
+  if(!gridArea) return;
+
+  if(dayRecords.length === 0){
+    gridArea.innerHTML = `<div class="cal-empty"><div class="big">No hay registros este día</div>Prueba otro día, categoría, muelle o búsqueda.</div>`;
+    return;
+  }
+
+  const unassignedRecords = dayRecords.filter(r => !r.dock).sort((a,b)=>a.ts-b.ts);
+  const assignedRecords = dayRecords.filter(r => r.dock);
+  const showOnlyUnassigned = calDockFilter === 'S/A';
+  const cols = showOnlyUnassigned ? [] : (calDockFilter !== 'Todos' ? [calDockFilter] : dockColumnsFor(assignedRecords, configuredDocks));
+  const byCell = {};
+  assignedRecords.forEach(r=>{
+    const hour = Math.min(20, Math.max(6, parseInt((r.time||'06:00').split(':')[0], 10)));
+    const col = String(r.dock);
+    const key = `${hour}-${col}`;
+    (byCell[key] = byCell[key] || []).push(r);
+  });
+
+  function loadCardHtml(r){
+    const isDone = r.status === 'despachado';
+    const isUnloading = r.status === 'en_descarga';
+    const badge = isDone ? 'Listo' : (isUnloading ? 'Descarga' : r.time);
+    return `<div class="load-card ${isDone?'despachado':''} ${isUnloading?'en_descarga':''}" data-edit="${r.id}">
+      <div class="lc-top"><span class="lc-plate">${r.plate||'—'}</span><span class="lc-badge">${badge}</span></div>
+      <div class="lc-prov">${r.provider||''}</div>
+    </div>`;
+  }
+
+  let gridHtml = '';
+  if(cols.length > 0){
+    gridHtml += `<div class="cal-grid" style="grid-template-columns:90px repeat(${cols.length},1fr);">`;
+    gridHtml += `<div class="cal-cell-head"></div>`;
+    cols.forEach(c=>{ gridHtml += `<div class="cal-cell-head">Muelle ${c}</div>`; });
+    CAL_HOURS.forEach(hour=>{
+      gridHtml += `<div class="cal-hour-label">${pad(hour)}:00</div>`;
+      cols.forEach(col=>{
+        const items = byCell[`${hour}-${col}`] || [];
+        gridHtml += `<div class="cal-cell">${items.map(loadCardHtml).join('')}</div>`;
+      });
+    });
+    gridHtml += `</div>`;
+  } else {
+    gridHtml = `<div class="cal-empty" style="padding:30px 10px;"><div class="big">Mostrando solo registros sin muelle</div>Quita el filtro para ver la cuadrícula por muelle.</div>`;
+  }
+
+  const unassignedHtml = `
+    <div class="cal-unassigned-panel">
+      <div class="cal-unassigned-head">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Sin muelle asignado
+      </div>
+      <div class="cal-unassigned-count">${unassignedRecords.length} en espera</div>
+      <div class="cal-unassigned-list">
+        ${unassignedRecords.length ? unassignedRecords.map(loadCardHtml).join('') : `<div class="cal-unassigned-empty">No hay transportistas esperando muelle</div>`}
+      </div>
+    </div>
+  `;
+
+  gridArea.innerHTML = `
+    <div class="cal-layout">
+      <div class="cal-grid-scroll">${gridHtml}</div>
+      ${unassignedHtml}
+    </div>
+  `;
+
+  gridArea.querySelectorAll('.load-card[data-edit]').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      if(!canEditFields()){ toast('Tu rol no tiene permiso para editar registros'); return; }
+      const record = cachedArrivals.find(r=>r.id === card.dataset.edit);
+      if(record) showEditModal(record);
+    });
+  });
+}
+
+async function renderDashboard(){
+  document.body.classList.add('dashboard-bg');
+  const admin = isAdmin();
+  const manage = canManage();
+  app.innerHTML = `
+    <div class="app-shell">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <img src="/assets/novex.png" alt="NOVEX">
+          <div class="div"></div>
+          <img src="/assets/vidri.png" alt="VIDRI">
+        </div>
+        <div class="sidebar-title">Torre de Control</div>
+        <nav class="sidebar-nav">
+          <button class="sidebar-item ${activeNavView==='dashboard'?'active':''}" data-nav="dashboard">${sidebarIcon('dashboard')}Dashboard</button>
+          <button class="sidebar-item ${activeNavView==='calendar'?'active':''}" data-nav="calendar">${sidebarIcon('calendar')}Citas</button>
+          <button class="sidebar-item ${perspectivaExpanded?'active':''}" id="btnPerspectiva">${sidebarIcon('insights')}Perspectiva
+            <svg class="pv-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" style="margin-left:auto;transform:rotate(${perspectivaExpanded?'180':'0'}deg);transition:transform .15s;"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="sidebar-submenu" id="perspectivaSubmenu" style="display:${perspectivaExpanded?'flex':'none'};">
+            <button class="sidebar-item sub ${activeNavView==='insights-arrivals'?'active':''}" data-nav="insights-arrivals">Registro de llegadas</button>
+          </div>
+          <button class="sidebar-item" data-nav="suggest">${sidebarIcon('suggest')}Sugerencias</button>
+          ${manage ? `
+          <div class="sidebar-divider"></div>
+          <button class="sidebar-item" data-nav="config">${sidebarIcon('settings')}Configuración</button>
+          ` : ''}
+        </nav>
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="sidebar-user-avatar">${(getUsername()||'?').charAt(0).toUpperCase()}</div>
+            <div><div class="sidebar-user-name">${getUsername()}</div><div class="sidebar-user-role">${roleLabel()}</div></div>
+          </div>
+          <button class="sidebar-item" id="btnExit">${sidebarIcon('logout')}Salir</button>
+        </div>
+      </div>
+      <div class="main-area">
+        <div class="filter-bar">
+          <span class="fb-title">${activeNavView==='calendar' ? 'Citas · Gestión de Patio' : 'Dashboard · Gestión de Patio'}</span>
+          <span class="role-badge ${admin?'admin':'viewer'}">${roleLabel()}</span>
+          <span class="live"><span class="pulse"></span>en vivo</span>
+          <span class="clock" id="liveClock"></span>
+        </div>
+        <div id="viewContent"></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnExit').onclick = ()=>{ clearSession(); clearInterval(clockTimer); route(); };
+  const btnPerspectiva = document.getElementById('btnPerspectiva');
+  if(btnPerspectiva) btnPerspectiva.addEventListener('click', ()=>{
+    perspectivaExpanded = !perspectivaExpanded;
+    document.getElementById('perspectivaSubmenu').style.display = perspectivaExpanded ? 'flex' : 'none';
+    btnPerspectiva.querySelector('.pv-chev').style.transform = perspectivaExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    btnPerspectiva.classList.toggle('active', perspectivaExpanded);
+  });
+  document.querySelectorAll('.sidebar-item[data-nav]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const nav = btn.dataset.nav;
+      if(nav === 'suggest'){ showSuggestionsModal(); return; }
+      if(nav === 'config'){ showConfigHub(); return; }
+      activeNavView = nav;
+      document.querySelectorAll('.sidebar-item[data-nav]').forEach(b=>b.classList.remove('active'));
+      if(nav === 'dashboard' || nav === 'calendar' || nav === 'insights-arrivals') btn.classList.add('active');
+      document.querySelector('.fb-title').textContent =
+        nav==='calendar' ? 'Citas · Gestión de Patio' :
+        nav==='insights-arrivals' ? 'Perspectiva · Registro de llegadas' :
+        'Dashboard · Gestión de Patio';
+      renderActiveView();
+    });
+  });
+
+  updateClock();
+  if(clockTimer) clearInterval(clockTimer);
+  clockTimer = setInterval(updateClock, 1000);
+
+  await renderActiveView();
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(()=>{
+    if(activeNavView==='dashboard') renderList();
+    else if(activeNavView==='calendar') renderCalendarView();
+    else if(activeNavView==='insights-arrivals') renderInsightsTable();
+  }, 20000);
+}
+
+async function renderActiveView(){
+  if(activeNavView === 'calendar'){
+    await renderCalendarShell();
+    await renderCalendarView();
+  } else if(activeNavView === 'insights-arrivals'){
+    renderInsightsShell();
+    await renderInsightsTable();
+  } else {
+    renderCardsShell();
+    await renderList();
+  }
+}
+
+let insightsRange = { mode: 'today', from: null, to: null };
+
+function renderInsightsShell(){
+  const todayKey = localDateParts().key;
+  document.getElementById('viewContent').innerHTML = `
+    <div class="dash-body">
+      <div class="section-title">Registro de llegadas</div>
+      <div class="controls-row">
+        <div class="period-tabs" id="insightsRangeTabs">
+          <button data-mode="today" class="active">Hoy</button>
+          <button data-mode="week">Semana</button>
+          <button data-mode="all">Todos</button>
+          <button data-mode="custom">Rango</button>
+        </div>
+      </div>
+      <div class="inline-add-row" id="insightsCustomRange" style="display:none;margin-bottom:16px;">
+        <div class="field" style="flex:1;margin-bottom:0;"><label>Desde</label><input type="date" id="insightsFrom" value="${todayKey}"></div>
+        <div class="field" style="flex:1;margin-bottom:0;"><label>Hasta</label><input type="date" id="insightsTo" value="${todayKey}"></div>
+        <button type="button" class="btn-secondary" id="insightsApplyRange" style="flex:0 0 auto;align-self:flex-end;">Aplicar</button>
+      </div>
+      <div class="search-row">
+        <input id="insightsSearch" type="text" placeholder="Buscar por proveedor o placa...">
+      </div>
+      <div class="insights-table-wrap" id="insightsTableWrap"></div>
+    </div>
+  `;
+  document.getElementById('insightsRangeTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#insightsRangeTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    insightsRange.mode = btn.dataset.mode;
+    document.getElementById('insightsCustomRange').style.display = insightsRange.mode === 'custom' ? 'flex' : 'none';
+    if(insightsRange.mode !== 'custom') renderInsightsTable();
+  });
+  document.getElementById('insightsApplyRange').onclick = ()=>{
+    insightsRange.from = document.getElementById('insightsFrom').value;
+    insightsRange.to = document.getElementById('insightsTo').value;
+    renderInsightsTable();
+  };
+  document.getElementById('insightsSearch').addEventListener('input', renderInsightsTable);
+}
+
+async function renderInsightsTable(){
+  cachedArrivals = await loadArrivals();
+  const wrap = document.getElementById('insightsTableWrap');
+  if(!wrap) return;
+  const todayKey = localDateParts().key;
+  const search = (document.getElementById('insightsSearch')?.value || '').toLowerCase();
+
+  let rows = cachedArrivals.slice();
+  if(insightsRange.mode === 'today'){
+    rows = rows.filter(r => r.date === todayKey);
+  } else if(insightsRange.mode === 'week'){
+    const weekAgo = Date.now() - 7*24*60*60*1000;
+    rows = rows.filter(r => r.ts >= weekAgo);
+  } else if(insightsRange.mode === 'custom' && insightsRange.from && insightsRange.to){
+    rows = rows.filter(r => r.date >= insightsRange.from && r.date <= insightsRange.to);
+  }
+  if(search){
+    rows = rows.filter(r => (r.provider||'').toLowerCase().includes(search) || (r.plate||'').toLowerCase().includes(search));
+  }
+  rows.sort((a,b)=>b.ts-a.ts);
+
+  if(rows.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><div class="big">No hay registros en este rango</div>Prueba otro filtro de fecha o búsqueda.</div>`;
+    return;
+  }
+
+  const statusLabel = { esperando:'Esperando', en_descarga:'En descarga', despachado:'Despachado' };
+  wrap.innerHTML = `
+    <table class="insights-table">
+      <thead>
+        <tr><th>Proveedor</th><th>Placa</th><th>Hora de llegada</th><th>Estado</th></tr>
+      </thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.provider||'—'}</td>
+            <td class="mono">${r.plate||'—'}</td>
+            <td class="mono">${r.time}${r.date!==todayKey ? ' · '+fmtShortDate(r.date) : ''}</td>
+            <td><span class="insights-status-badge ${r.status||'esperando'}">${statusLabel[r.status]||'Esperando'}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div class="insights-table-count">${rows.length} registro${rows.length===1?'':'s'}</div>
+  `;
+}
+
+function renderCardsShell(){
+  document.getElementById('viewContent').innerHTML = `
+    <div class="dash-body">
+      <div class="section-title">Estado del patio ahora</div>
+      <div class="cards-row" id="kpiRow"></div>
+      <div class="controls-row">
+        <div class="period-tabs" id="periodTabs">
+          <button data-period="day" class="active">Día</button>
+          <button data-period="week">Semana</button>
+          <button data-period="month">Mes</button>
+          <button data-period="all">Todos</button>
+        </div>
+        <div class="day-nav" id="dayNav">
+          <button type="button" id="dayPrev" title="Día anterior">‹</button>
+          <span id="dayLabel"></span>
+          <button type="button" id="dayNext" title="Día siguiente">›</button>
+        </div>
+      </div>
+      <div class="search-row">
+        <input id="searchBox" type="text" placeholder="Buscar por proveedor, motorista o placa...">
+        <button type="button" class="layout-toggle" id="btnLayoutToggle" title="Cambiar estilo de tarjeta (vertical / en fila)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>
+        </button>
+      </div>
+      <div class="cards-grid" id="cardsArea"></div>
+    </div>
+  `;
+  document.getElementById('searchBox').addEventListener('input', renderList);
+  document.getElementById('btnLayoutToggle').onclick = ()=>{
+    cardViewMode = cardViewMode === 'grid' ? 'list' : 'grid';
+    document.getElementById('cardsArea').className = cardViewMode === 'grid' ? 'cards-grid' : 'cards-list';
+    document.getElementById('btnLayoutToggle').classList.toggle('active-view', cardViewMode === 'list');
+    renderList();
+  };
+  document.getElementById('dayPrev').onclick = ()=>{ dayOffset -= 1; updateDayNav(); renderList(); };
+  document.getElementById('dayNext').onclick = ()=>{ if(dayOffset < 0){ dayOffset += 1; updateDayNav(); renderList(); } };
+  updateDayNav();
+  document.getElementById('periodTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#periodTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPeriod = btn.dataset.period;
+    if(currentPeriod === 'day') dayOffset = 0;
+    document.getElementById('dayNav').style.display = currentPeriod === 'day' ? 'flex' : 'none';
+    updateDayNav();
+    renderList();
+  });
+}
+
+function greenTintStyle(waitMinutes){
+  const t = Math.min(1, Math.max(0, waitMinutes / 120)); // llega a verde completo tras 2 horas
+  const r = Math.round(255 + (215 - 255) * t);
+  const g = Math.round(255 + (241 - 255) * t);
+  const b = Math.round(255 + (223 - 255) * t);
+  const borderT = Math.min(1, t * 1.3);
+  return `background-color:rgb(${r},${g},${b});border-color:rgba(20,154,92,${(borderT*.4).toFixed(2)});`;
+}
+
+const DEFAULT_CATEGORIES = ['Contenedor', 'Camión', 'Otros'];
+const DEFAULT_FIELD_LABELS = {
+  provider: 'Proveedor',
+  driverName: 'Nombre del motorista',
+  phone: 'Teléfono',
+  plate: 'Placa',
+  transportType: 'Tipo de transporte'
+};
+const DEFAULT_FIELD_REQUIRED = {
+  provider: true,
+  driverName: true,
+  phone: true,
+  plate: true,
+  transportType: true
+};
+const CATEGORY_ICONS = { 'Contenedor':'📦', 'Camión':'🚛', 'Otros':'🔹' };
+function categoryIcon(name){ return CATEGORY_ICONS[name] || '🏷️'; }
+
+async function getFieldLabels(){
+  const s = await getSettings();
+  return Object.assign({}, DEFAULT_FIELD_LABELS, s.fieldLabels || {});
+}
+async function getFieldRequired(){
+  const s = await getSettings();
+  return Object.assign({}, DEFAULT_FIELD_REQUIRED, s.fieldRequired || {});
+}
+async function getTransportCategories(){
+  const s = await getSettings();
+  return (Array.isArray(s.transportCategories) && s.transportCategories.length) ? s.transportCategories : DEFAULT_CATEGORIES;
+}
+function buildTypeGroups(categories){
+  return categories.map(c => ({ key: c, label: c, icon: categoryIcon(c) }));
+}
+
+function buildCardHtml(r, i){
+  const status = r.status || 'esperando';
+  const isDone = status === 'despachado';
+  const isUnloading = status === 'en_descarga';
+  const waPhone = phoneToWhatsApp(r.phone);
+  const waitMin = (isDone || isUnloading) ? 0 : (Date.now() - r.ts) / 60000;
+  const tintStyle = (!isDone && !isUnloading) ? greenTintStyle(waitMin) : '';
+  const statusLabel = isDone ? 'Despachado' : (isUnloading ? 'En descarga' : 'Esperando');
+  const nextStatus = isDone ? 'esperando' : (isUnloading ? 'despachado' : 'en_descarga');
+  const detailsId = 'det-' + r.id.replace(/[^a-zA-Z0-9]/g,'') + '-' + Math.random().toString(36).slice(2,6);
+
+  const metaLines = [];
+  metaLines.push(`Registro: <b>${r.time}</b>`);
+  if(r.unloadingStartedAt) metaLines.push(`Inicio descarga: <b>${fmtTimeMs(r.unloadingStartedAt)}</b>`);
+  if(r.dispatchedAt) metaLines.push(`Despacho: <b>${fmtTimeMs(r.dispatchedAt)}</b>`);
+  if(r.dispatchedAt && r.unloadingStartedAt){
+    metaLines.push(`Duración descarga: <b>${fmtDuration((r.dispatchedAt - r.unloadingStartedAt)/60000)}</b>`);
+  }
+
+  return `
+    <div class="arrival-card ${(!canChangeStatus()||viewOnlyMode)?'view-only':''}" data-id="${r.id}" data-next="${nextStatus}" style="animation-delay:${Math.min(i*35,400)}ms">
+      <div class="card-row">
+        <div class="card-info">
+          <div class="card-company">${r.provider}</div>
+          <div class="card-subinfo">${r.driverName||''}${r.phone ? ' · '+r.phone : ''}</div>
+          ${r.plate ? `<div class="plate-chip">${r.plate}</div>` : ''}
+        </div>
+        <div class="card-time-status ${status} ${(canChangeStatus()&&!viewOnlyMode)?'clickable':''}" style="${tintStyle}">
+          <div class="big-time">${r.time}</div>
+          <div class="big-date">${fmtShortDate(r.date)}</div>
+          <div class="card-status-badge ${status}">${statusLabel}</div>
+        </div>
+      </div>
+      <button type="button" class="card-details-toggle" data-details="${detailsId}">
+        <span>Ver horarios</span>
+        <svg class="chev" width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="card-details" id="${detailsId}">${metaLines.join(' · ')}</div>
+      <div class="card-actions">
+        ${waPhone ? `<button type="button" class="card-action-btn whatsapp" data-wa="${waPhone}" data-wname="${r.driverName||''}" title="Escribir por WhatsApp"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 004.74 1.2h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.1a8.2 8.2 0 01-4.17-1.14l-.3-.18-3.11.82.83-3.04-.2-.31a8.2 8.2 0 01-1.26-4.35c0-4.53 3.69-8.22 8.22-8.22 4.53 0 8.21 3.69 8.21 8.22 0 4.53-3.68 8.2-8.22 8.2zm4.5-6.15c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.96-.14.16-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.45-1.37-1.7-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.23.25-.86.84-.86 2.04 0 1.2.88 2.36 1 2.53.12.16 1.73 2.64 4.2 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.55.1.47-.07 1.46-.6 1.66-1.17.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.28z"/></svg></button>` : ''}
+        ${canEditFields() ? `<button type="button" class="card-action-btn edit" data-edit="${r.id}" title="Editar registro"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function wireCardEvents(container){
+  container.querySelectorAll('[data-wa]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const msg = encodeURIComponent(`Hola ${btn.dataset.wname||''}, te contactamos de CD NOVEX (Vidrí).`);
+      window.open(`https://wa.me/${btn.dataset.wa}?text=${msg}`, '_blank');
+    });
+  });
+  container.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const record = cachedArrivals.find(r=>r.id === btn.dataset.edit);
+      if(record) showEditModal(record);
+    });
+  });
+  container.querySelectorAll('[data-details]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const panel = document.getElementById(btn.dataset.details);
+      const opening = !panel.classList.contains('open');
+      panel.classList.toggle('open', opening);
+      btn.classList.toggle('open', opening);
+      btn.querySelector('span').textContent = opening ? 'Ocultar horarios' : 'Ver horarios';
+    });
+  });
+  if(canChangeStatus() && !viewOnlyMode){
+    container.querySelectorAll('.arrival-card').forEach(card=>{
+      const timeBlock = card.querySelector('.card-time-status');
+      if(timeBlock){
+        timeBlock.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          card.classList.add('pulse');
+          setTimeout(()=>toggleStatus(card.dataset.id, card.dataset.next), 150);
+        });
+      }
+    });
+  }
+}
+
+async function renderList(){
+  cachedArrivals = await loadArrivals();
+  const categories = await getTransportCategories();
+  const typeGroups = buildTypeGroups(categories);
+  const search = (document.getElementById('searchBox')?.value || '').toLowerCase();
+
+  let filtered = cachedArrivals.filter(r => inPeriod(r, currentPeriod));
+  if(search){
+    filtered = filtered.filter(r => r.provider.toLowerCase().includes(search) || (r.driverName||'').toLowerCase().includes(search) || (r.plate||'').toLowerCase().includes(search) || (r.transportType||'').toLowerCase().includes(search) || (r.phone||'').toLowerCase().includes(search));
+  }
+  filtered.sort((a,b)=>a.ts-b.ts);
+
+  const globalEsperando = filtered.filter(r=>r.status==='esperando' || !r.status).length;
+  const globalRegistrados = filtered.length;
+  const globalEnDescarga = filtered.filter(r=>r.status==='en_descarga').length;
+  const globalDespachado = filtered.filter(r=>r.status==='despachado').length;
+
+  const kpiRow = document.getElementById('kpiRow');
+  const isFirstPaint = kpiRow.children.length === 0;
+  kpiRow.innerHTML = `
+    <div class="stat-card c-patio" style="animation-delay:.02s">
+      <div class="top-row"><span class="lbl">Cantidad esperando</span><span class="icon-wrap">${kpiIcon('patio')}</span></div>
+      <div class="num" id="kpiEsperando">0</div>
+    </div>
+    <div class="stat-card c-hoy" style="animation-delay:.08s">
+      <div class="top-row"><span class="lbl">Cantidad registrados</span><span class="icon-wrap">${kpiIcon('cal')}</span></div>
+      <div class="num" id="kpiRegistrados">0</div>
+    </div>
+    <div class="stat-card c-promedio" style="animation-delay:.14s">
+      <div class="top-row"><span class="lbl">Cantidad en descarga</span><span class="icon-wrap">${kpiIcon('timer')}</span></div>
+      <div class="num" id="kpiEnDescarga">0</div>
+    </div>
+    <div class="stat-card c-despachados" style="animation-delay:.2s">
+      <div class="top-row"><span class="lbl">Cantidad despachado</span><span class="icon-wrap">${kpiIcon('check')}</span></div>
+      <div class="num" id="kpiDespachado">0</div>
+    </div>
+  `;
+  const dur = isFirstPaint ? 700 : 500;
+  animateCountUp(document.getElementById('kpiEsperando'), prevKpiValues.esperando||0, globalEsperando, dur);
+  animateCountUp(document.getElementById('kpiRegistrados'), prevKpiValues.registrados||0, globalRegistrados, dur);
+  animateCountUp(document.getElementById('kpiEnDescarga'), prevKpiValues.enDescarga||0, globalEnDescarga, dur);
+  animateCountUp(document.getElementById('kpiDespachado'), prevKpiValues.despachado||0, globalDespachado, dur);
+  prevKpiValues = { esperando: globalEsperando, registrados: globalRegistrados, enDescarga: globalEnDescarga, despachado: globalDespachado };
+
+  const cardsArea = document.getElementById('cardsArea');
+  if(filtered.length === 0){
+    cardsArea.className = '';
+    cardsArea.innerHTML = `<div class="empty-state"><div class="big">No hay llegadas en este período</div>Prueba con otro filtro o espera el próximo registro.</div>`;
+    return;
+  }
+
+  const innerClass = cardViewMode === 'list' ? 'cards-list' : 'type-column-stack';
+  cardsArea.className = 'type-columns';
+  cardsArea.innerHTML = typeGroups.map(g=>{
+    const items = filtered.filter(r => r.transportType === g.key);
+    const esperando = items.filter(r => r.status === 'esperando' || !r.status).length;
+    const enDescarga = items.filter(r => r.status === 'en_descarga').length;
+    const despachado = items.filter(r => r.status === 'despachado').length;
+    return `
+      <div class="type-column">
+        <div class="type-column-head">
+          <div>
+            <span class="tc-name">${g.icon} ${g.label}</span>
+            <div class="tc-substats">${esperando} esperando · ${enDescarga} descarga · ${despachado} listo</div>
+          </div>
+          <span class="tc-count">${items.length}</span>
+        </div>
+        <div class="${innerClass}">
+          ${items.length ? items.map((r,i)=>buildCardHtml(r,i)).join('') : `<div class="type-column-empty">Sin registros</div>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  wireCardEvents(cardsArea);
+}
+
+async function toggleStatus(id, newStatus){
+  try{
+    await apiPatch('/api/arrivals', { id, status: newStatus });
+    toast(newStatus==='despachado' ? 'Marcado como despachado' : 'Registro reabierto');
+    renderList();
+  }catch(e){
+    toast(e.message || 'No se pudo actualizar');
+  }
+}
+window.toggleStatus = toggleStatus;
+
+// ---------------- QR MODAL ----------------
+function showQrModal(){
+  const baseUrl = location.origin + '/';
+  const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(baseUrl);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Código QR de registro</h3>
+      <p class="hint">Imprime este código y colócalo en el punto de recepción. Al escanearlo, el transportista llega directo al formulario de registro.</p>
+      <div class="qr-box">
+        <img src="${qrImg}" alt="QR de registro">
+        <div class="qr-url">${baseUrl}</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="qrClose">Cerrar</button>
+        <a class="btn-primary-sm" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;" href="${qrImg}" target="_blank">Descargar</a>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#qrClose').onclick = ()=>overlay.remove();
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+}
+
+// ---------------- SETTINGS MODAL ----------------
+async function showSettingsModal(){
+  const s = await getSettings();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Configuración</h3>
+      <p class="hint">Notificaciones automáticas y geocerca para el registro por QR.</p>
+
+      <div class="section-label">Notificaciones</div>
+      <p class="hint" style="margin-top:-6px;">Cada llegada se reenvía a un webhook (Zapier, Make o Pipedream). Desde ahí armas los pasos de correo y/o WhatsApp usando los datos de abajo.</p>
+      <div class="field">
+        <label>Correo(s) de recepción — llegadas</label>
+        <textarea id="setEmail" class="sugg-input" style="min-height:56px;" placeholder="recepcion@vidri.com, bodega@vidri.com">${s.notifyEmail||''}</textarea>
+        <div class="field-hint">Separa varios correos con coma.</div>
+      </div>
+      <div class="field">
+        <label>Correo(s) para sugerencias</label>
+        <textarea id="setSuggEmail" class="sugg-input" style="min-height:56px;" placeholder="admin@vidri.com, gerencia@vidri.com">${s.suggestionsEmail||''}</textarea>
+        <div class="field-hint">Separa varios correos con coma.</div>
+      </div>
+      <div class="field">
+        <label>WhatsApp de recepción — llegadas</label>
+        <input id="setWhatsapp" value="${s.notifyWhatsapp||''}" placeholder="+503 7123-4567, +502 7234-5678">
+        <div class="field-hint">Estos números se envían al webhook para que tu escenario de Zapier/Make les mande el mensaje de WhatsApp cuando alguien haga check-in. Separa varios con coma.</div>
+      </div>
+      <div class="field"><label>URL del webhook</label><input id="setWebhook" value="${s.webhookUrl||''}" placeholder="https://hooks.zapier.com/..."></div>
+
+      <div class="section-label">Geocerca del registro</div>
+      <p class="hint" style="margin-top:-6px;">Si la activas, solo se podrá registrar una llegada desde dentro del radio que definas alrededor de CD NOVEX.</p>
+      <label class="checkbox-field">
+        <input type="checkbox" id="setGeoEnabled" ${s.geofenceEnabled ? 'checked' : ''}>
+        <span>Exigir ubicación dentro del radio para registrarse</span>
+      </label>
+      <div class="field"><label>Radio permitido (metros)</label><input id="setGeoRadius" type="number" min="10" value="${s.geofenceRadius||150}" placeholder="150"></div>
+      <div class="field-row">
+        <div class="field"><label>Latitud del centro</label><input id="setGeoLat" value="${s.geofenceLat||''}" placeholder="13.6929"></div>
+        <div class="field"><label>Longitud del centro</label><input id="setGeoLng" value="${s.geofenceLng||''}" placeholder="-89.2182"></div>
+      </div>
+      <button type="button" class="btn-secondary" id="btnUseMyLocation" style="width:100%;margin-bottom:6px;">📍 Usar mi ubicación actual como centro</button>
+      <div class="geo-hint" id="geoLocHint"></div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="setClose">Cancelar</button>
+        <button class="btn-primary-sm" id="setSave">Guardar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#setClose').onclick = ()=>overlay.remove();
+  overlay.querySelector('#btnUseMyLocation').onclick = ()=>{
+    const hint = document.getElementById('geoLocHint');
+    if(!navigator.geolocation){ hint.textContent = 'Tu navegador no soporta geolocalización.'; hint.className='geo-hint err'; return; }
+    hint.textContent = 'Obteniendo tu ubicación...'; hint.className = 'geo-hint';
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        document.getElementById('setGeoLat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('setGeoLng').value = pos.coords.longitude.toFixed(6);
+        hint.textContent = 'Ubicación capturada (precisión ~' + Math.round(pos.coords.accuracy) + ' m).';
+        hint.className = 'geo-hint ok';
+      },
+      ()=>{ hint.textContent = 'No se pudo obtener tu ubicación. Revisa los permisos del navegador.'; hint.className='geo-hint err'; },
+      { enableHighAccuracy:true, timeout:10000 }
+    );
+  };
+  overlay.querySelector('#setSave').onclick = async ()=>{
+    try{
+      const lat = parseFloat(document.getElementById('setGeoLat').value);
+      const lng = parseFloat(document.getElementById('setGeoLng').value);
+      const radius = parseFloat(document.getElementById('setGeoRadius').value);
+      await saveSettings({
+        notifyEmail: document.getElementById('setEmail').value.trim(),
+        suggestionsEmail: document.getElementById('setSuggEmail').value.trim(),
+        notifyWhatsapp: document.getElementById('setWhatsapp').value.trim(),
+        webhookUrl: document.getElementById('setWebhook').value.trim(),
+        geofenceEnabled: document.getElementById('setGeoEnabled').checked,
+        geofenceLat: isNaN(lat) ? null : lat,
+        geofenceLng: isNaN(lng) ? null : lng,
+        geofenceRadius: isNaN(radius) ? 150 : radius
+      });
+      overlay.remove();
+      toast('Configuración guardada');
+    }catch(e){
+      toast(e.message || 'No se pudo guardar');
+    }
+  };
+}
+
+// ---------------- EDITAR / ELIMINAR REGISTRO (admin) ----------------
+async function showEditModal(record){
+  const docks = await loadDocks();
+  const dockOptions = [...docks];
+  if(record.dock && !dockOptions.includes(record.dock)) dockOptions.push(record.dock);
+  const labels = await getFieldLabels();
+  const categories = await getTransportCategories();
+  const typeOptions = [...categories];
+  if(record.transportType && !typeOptions.includes(record.transportType)) typeOptions.push(record.transportType);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const customEntries = Object.entries(record.customFields || {});
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Editar registro</h3>
+      <p class="hint">Corrige los datos o elimina el registro por completo.</p>
+      <div class="field"><label>${labels.provider}</label><input id="editProvider" value="${record.provider||''}"></div>
+      <div class="field"><label>${labels.driverName}</label><input id="editDriver" value="${record.driverName||''}"></div>
+      <div class="field"><label>${labels.phone}</label><input id="editPhone" value="${record.phone||''}"></div>
+      <div class="field"><label>${labels.plate}</label><input id="editPlate" value="${record.plate||''}"></div>
+      <div class="field"><label>${labels.transportType}</label>
+        <select id="editType" style="width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid var(--border);font-family:inherit;font-size:13.5px;background:var(--bg-elevated);color:var(--text);">
+          ${typeOptions.map(t=>`<option value="${t}" ${record.transportType===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Muelle asignado</label>
+        <select id="editDock" style="width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid var(--border);font-family:inherit;font-size:13.5px;background:var(--bg-elevated);color:var(--text);">
+          <option value="" ${!record.dock?'selected':''}>Sin muelle</option>
+          ${dockOptions.map(d=>`<option value="${d}" ${record.dock===d?'selected':''}>${d}</option>`).join('')}
+        </select>
+        ${dockOptions.length===0 ? `<div class="field-hint">Aún no has configurado muelles — ve a "Muelles" en el menú para agregarlos.</div>` : ''}
+      </div>
+      <div class="field"><label>Estado</label>
+        <select id="editStatus" style="width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid var(--border);font-family:inherit;font-size:13.5px;background:var(--bg-elevated);color:var(--text);">
+          <option value="esperando" ${record.status==='esperando'?'selected':''}>Esperando</option>
+          <option value="en_descarga" ${record.status==='en_descarga'?'selected':''}>En descarga</option>
+          <option value="despachado" ${record.status==='despachado'?'selected':''}>Despachado</option>
+        </select>
+        <div class="field-hint">Cambiar el estado aquí también actualiza las horas de inicio de descarga / despacho.</div>
+      </div>
+      ${customEntries.length ? `<div class="section-label">Campos adicionales</div>` + customEntries.map(([k,v])=>{
+        if(typeof v === 'string' && v.startsWith('data:')){
+          return `<div class="field"><label>${k}</label><a href="${v}" target="_blank" class="btn-secondary" style="display:block;text-align:center;text-decoration:none;">Ver documento adjunto</a></div>`;
+        }
+        return `<div class="field"><label>${k}</label><input class="edit-custom" data-key="${k}" value="${v}"></div>`;
+      }).join('') : ''}
+      <div class="modal-actions">
+        ${canDeleteRecords() ? `<button class="btn-secondary" style="border-color:var(--accent);color:var(--accent-dark);" id="editDelete">Eliminar registro</button>` : '<div></div>'}
+        <button class="btn-primary-sm" id="editSave">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  if(canDeleteRecords()) overlay.querySelector('#editDelete').onclick = async ()=>{
+    if(!confirm('¿Eliminar este registro permanentemente? Esta acción no se puede deshacer.')) return;
+    try{
+      await apiDelete('/api/arrivals', { id: record.id });
+      overlay.remove();
+      toast('Registro eliminado');
+      if(activeNavView === 'calendar') renderCalendarView(); else renderList();
+    }catch(e){ toast(e.message || 'No se pudo eliminar'); }
+  };
+  overlay.querySelector('#editSave').onclick = async ()=>{
+    try{
+      const customFields = Object.assign({}, record.customFields || {});
+      overlay.querySelectorAll('.edit-custom').forEach(inp=>{ customFields[inp.dataset.key] = inp.value.trim(); });
+      await apiPatch('/api/arrivals', {
+        id: record.id,
+        provider: document.getElementById('editProvider').value.trim(),
+        driverName: document.getElementById('editDriver').value.trim(),
+        phone: document.getElementById('editPhone').value.trim(),
+        plate: document.getElementById('editPlate').value.trim(),
+        transportType: document.getElementById('editType').value,
+        dock: document.getElementById('editDock').value.trim(),
+        status: document.getElementById('editStatus').value,
+        customFields
+      });
+      overlay.remove();
+      toast('Registro actualizado');
+      if(activeNavView === 'calendar') renderCalendarView(); else renderList();
+    }catch(e){ toast(e.message || 'No se pudo guardar'); }
+  };
+}
+
+// ---------------- CAMPOS DEL FORMULARIO (admin) ----------------
+function showConfigHub(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:640px;">
+      <h3>Configuración</h3>
+      <p class="hint">Elige qué quieres administrar.</p>
+      <div class="config-tab-bar">
+        <button class="config-tab-btn" data-tab="fields">Campos y<br>formularios</button>
+        <button class="config-tab-btn" data-tab="docks">Muelles</button>
+        <button class="config-tab-btn" data-tab="users">Usuarios</button>
+        <button class="config-tab-btn" data-tab="qr">Código QR</button>
+        <button class="config-tab-btn" data-tab="settings">Notificaciones<br>y geocerca</button>
+        <button class="config-tab-btn" data-tab="viewmode">Vista</button>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn-secondary" id="hubClose" style="width:100%;">Cerrar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#hubClose').onclick = ()=>overlay.remove();
+  overlay.querySelectorAll('.config-tab-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      overlay.remove();
+      const tab = btn.dataset.tab;
+      if(tab === 'fields') showFieldsModal();
+      if(tab === 'docks') showDocksModal();
+      if(tab === 'users') showUsersModal();
+      if(tab === 'qr') showQrModal();
+      if(tab === 'settings') showSettingsModal();
+      if(tab === 'viewmode'){
+        viewOnlyMode = !viewOnlyMode;
+        toast(viewOnlyMode ? 'Modo solo visualización activado' : 'Modo edición activado');
+        if(activeNavView === 'dashboard') renderList();
+      }
+    };
+  });
+}
+
+async function showFieldsModal(){
+  const fields = await loadFormFields();
+  const labels = await getFieldLabels();
+  const categories = await getTransportCategories();
+  const required = await getFieldRequired();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const fieldRow = (key, label, inputId) => `
+    <div class="field" style="display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;">
+        <label>${label}</label>
+        <input id="${inputId}" value="${labels[key]}">
+      </div>
+      <label class="checkbox-field" style="margin:20px 0 0;white-space:nowrap;"><input type="checkbox" id="reqField_${key}" ${required[key]?'checked':''}> <span>Obligatorio</span></label>
+    </div>
+  `;
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Campos del formulario</h3>
+      <p class="hint">Personaliza los nombres de los campos fijos, si son obligatorios, las categorías de tipo de transporte, y agrega campos extra al registro.</p>
+
+      <div class="section-label">Campos fijos</div>
+      ${fieldRow('provider', 'Proveedor', 'lblFieldProvider')}
+      ${fieldRow('driverName', 'Motorista', 'lblFieldDriver')}
+      ${fieldRow('phone', 'Teléfono', 'lblFieldPhone')}
+      ${fieldRow('plate', 'Placa', 'lblFieldPlate')}
+      ${fieldRow('transportType', 'Tipo de transporte', 'lblFieldType')}
+
+      <div class="section-label">Categorías de tipo de transporte</div>
+      <p class="hint" style="margin-top:-6px;">Estas categorías se usan como opciones en el check-in, columnas del Dashboard, y pestañas de Citas. Agrega, elimina o renombra las que necesites.</p>
+      <div id="categoriesList"></div>
+      <div class="inline-add-row">
+        <input id="newCategoryName" placeholder="Ej. Refrigerado" style="flex:1;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--bg-elevated);color:var(--text);">
+        <button type="button" class="btn-secondary" id="btnAddCategory" style="flex:0 0 auto;">+ Agregar</button>
+      </div>
+
+      <div class="section-label">Campos adicionales</div>
+      <div class="admin-list" id="fieldsList"></div>
+      <div class="field"><label>Etiqueta</label><input id="newFieldLabel" placeholder="Ej. Número de factura"></div>
+      <div class="field"><label>Tipo de campo</label>
+        <select id="newFieldType" style="width:100%;">
+          <option value="text">Texto corto</option>
+          <option value="textarea">Texto largo</option>
+          <option value="number">Número</option>
+          <option value="tel">Teléfono/número</option>
+          <option value="date">Fecha</option>
+          <option value="select">Lista desplegada</option>
+          <option value="multiselect">Lista desplegada múltiple</option>
+          <option value="combo">Caja combinada</option>
+          <option value="file">Documento</option>
+        </select>
+      </div>
+      <div class="field" id="newFieldOptionsWrap" style="display:none;">
+        <label>Opciones (una por línea)</label>
+        <textarea id="newFieldOptions" class="sugg-input" style="min-height:70px;" placeholder="Opción 1
+Opción 2
+Opción 3"></textarea>
+      </div>
+      <label class="checkbox-field"><input type="checkbox" id="newFieldRequired"> <span>Obligatorio</span></label>
+      <button type="button" class="btn-secondary" id="btnAddField" style="width:100%;margin-bottom:14px;">+ Agregar campo</button>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="fieldsClose">Cerrar</button>
+        <button class="btn-primary-sm" id="fieldsSave">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  let currentFields = [...fields];
+
+  const FIELD_TYPE_LABELS = {
+    text:'Texto corto', textarea:'Texto largo', number:'Número', tel:'Teléfono/número',
+    date:'Fecha', select:'Lista desplegable', multiselect:'Lista múltiple', combo:'Caja combinada', file:'Documento'
+  };
+  const OPTIONS_TYPES = ['select','multiselect','combo'];
+
+  const typeSel = overlay.querySelector('#newFieldType');
+  const optWrap = overlay.querySelector('#newFieldOptionsWrap');
+  typeSel.addEventListener('change', ()=>{
+    optWrap.style.display = OPTIONS_TYPES.includes(typeSel.value) ? 'block' : 'none';
+  });
+  let currentCategories = [...categories];
+
+  function renderFieldsList(){
+    const list = document.getElementById('fieldsList');
+    if(currentFields.length === 0){
+      list.innerHTML = `<div class="empty-list">Aún no hay campos personalizados</div>`;
+      return;
+    }
+    list.innerHTML = currentFields.map((f,i)=>`
+      <div class="admin-list-row">
+        <div><div class="name">${f.label}</div><div class="sub">${FIELD_TYPE_LABELS[f.type]||f.type} ${f.required?'· Obligatorio':'· Opcional'}${f.options&&f.options.length?' · '+f.options.length+' opciones':''}</div></div>
+        <button class="del-btn" data-i="${i}" title="Eliminar campo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.onclick = ()=>{ currentFields.splice(parseInt(btn.dataset.i),1); renderFieldsList(); };
+    });
+  }
+  renderFieldsList();
+
+  function renderCategoriesList(){
+    const list = document.getElementById('categoriesList');
+    if(currentCategories.length === 0){
+      list.innerHTML = `<div class="empty-list">Sin categorías — se usarán "Contenedor, Camión, Otros" por defecto.</div>`;
+      return;
+    }
+    list.innerHTML = currentCategories.map((name,i)=>`
+      <div class="admin-list-row" style="gap:8px;">
+        <input class="cat-name-input" data-i="${i}" value="${name}" style="flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--card);color:var(--text);">
+        <button class="del-btn" data-i="${i}" title="Eliminar categoría"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.cat-name-input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ currentCategories[parseInt(inp.dataset.i)] = inp.value; });
+    });
+    list.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.onclick = ()=>{ currentCategories.splice(parseInt(btn.dataset.i),1); renderCategoriesList(); };
+    });
+  }
+  renderCategoriesList();
+
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#fieldsClose').onclick = ()=>overlay.remove();
+  overlay.querySelector('#btnAddCategory').onclick = ()=>{
+    const name = document.getElementById('newCategoryName').value.trim();
+    if(!name){ toast('Escribe un nombre para la categoría'); return; }
+    currentCategories.push(name);
+    document.getElementById('newCategoryName').value = '';
+    renderCategoriesList();
+  };
+  overlay.querySelector('#btnAddField').onclick = ()=>{
+    const label = document.getElementById('newFieldLabel').value.trim();
+    if(!label){ toast('Escribe una etiqueta para el campo'); return; }
+    const type = document.getElementById('newFieldType').value;
+    const id = 'f' + Date.now();
+    const newField = { id, label, type, required: document.getElementById('newFieldRequired').checked };
+    if(OPTIONS_TYPES.includes(type)){
+      const options = document.getElementById('newFieldOptions').value.split('\n').map(o=>o.trim()).filter(Boolean);
+      if(options.length === 0){ toast('Agrega al menos una opción para este tipo de campo'); return; }
+      newField.options = options;
+    }
+    currentFields.push(newField);
+    document.getElementById('newFieldLabel').value = '';
+    document.getElementById('newFieldOptions').value = '';
+    document.getElementById('newFieldRequired').checked = false;
+    renderFieldsList();
+  };
+  overlay.querySelector('#fieldsSave').onclick = async ()=>{
+    try{
+      const cleanCategories = currentCategories.map(c=>c.trim()).filter(Boolean);
+      const newLabels = {
+        provider: document.getElementById('lblFieldProvider').value.trim() || DEFAULT_FIELD_LABELS.provider,
+        driverName: document.getElementById('lblFieldDriver').value.trim() || DEFAULT_FIELD_LABELS.driverName,
+        phone: document.getElementById('lblFieldPhone').value.trim() || DEFAULT_FIELD_LABELS.phone,
+        plate: document.getElementById('lblFieldPlate').value.trim() || DEFAULT_FIELD_LABELS.plate,
+        transportType: document.getElementById('lblFieldType').value.trim() || DEFAULT_FIELD_LABELS.transportType
+      };
+      const newRequired = {
+        provider: document.getElementById('reqField_provider').checked,
+        driverName: document.getElementById('reqField_driverName').checked,
+        phone: document.getElementById('reqField_phone').checked,
+        plate: document.getElementById('reqField_plate').checked,
+        transportType: document.getElementById('reqField_transportType').checked
+      };
+      const currentSettings = await getSettings();
+      await saveSettings(Object.assign({}, currentSettings, { fieldLabels: newLabels, fieldRequired: newRequired, transportCategories: cleanCategories }));
+      await apiPost('/api/formfields', { fields: currentFields });
+      overlay.remove();
+      toast('Campos del formulario actualizados');
+      if(activeNavView === 'calendar') renderCalendarShell().then(renderCalendarView); else renderList();
+    }catch(e){ toast(e.message || 'No se pudo guardar'); }
+  };
+}
+
+// ---------------- MUELLES (admin) ----------------
+async function showDocksModal(){
+  const docks = await loadDocks();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Muelles</h3>
+      <p class="hint">Agrega, elimina o renombra los muelles que aparecen como columnas en la vista de Citas. Para renombrar, edita el texto directamente y guarda.</p>
+      <div id="docksList"></div>
+      <div class="inline-add-row">
+        <input id="newDockName" placeholder="Ej. Muelle 5" style="flex:1;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--bg-elevated);color:var(--text);">
+        <button type="button" class="btn-secondary" id="btnAddDock" style="flex:0 0 auto;">+ Agregar</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="docksClose">Cerrar</button>
+        <button class="btn-primary-sm" id="docksSave">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  let currentDocks = [...docks];
+
+  function renderDocksList(){
+    const list = document.getElementById('docksList');
+    if(currentDocks.length === 0){
+      list.innerHTML = `<div class="empty-list">Aún no hay muelles configurados. La vista de Citas usará "1, 2, 3, 4" por defecto.</div>`;
+      return;
+    }
+    list.innerHTML = currentDocks.map((name,i)=>`
+      <div class="admin-list-row" style="gap:8px;">
+        <input class="dock-name-input" data-i="${i}" value="${name}" style="flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;background:var(--card);color:var(--text);">
+        <button class="del-btn" data-i="${i}" title="Eliminar muelle"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.dock-name-input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ currentDocks[parseInt(inp.dataset.i)] = inp.value; });
+    });
+    list.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.onclick = ()=>{ currentDocks.splice(parseInt(btn.dataset.i),1); renderDocksList(); };
+    });
+  }
+  renderDocksList();
+
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#docksClose').onclick = ()=>overlay.remove();
+  overlay.querySelector('#btnAddDock').onclick = ()=>{
+    const name = document.getElementById('newDockName').value.trim();
+    if(!name){ toast('Escribe un nombre para el muelle'); return; }
+    currentDocks.push(name);
+    document.getElementById('newDockName').value = '';
+    renderDocksList();
+  };
+  overlay.querySelector('#docksSave').onclick = async ()=>{
+    try{
+      const clean = currentDocks.map(d=>d.trim()).filter(Boolean);
+      const res = await apiPost('/api/docks', { docks: clean });
+      overlay.remove();
+      toast('Muelles actualizados');
+      if(activeNavView === 'calendar') renderCalendarView();
+    }catch(e){ toast(e.message || 'No se pudo guardar'); }
+  };
+}
+
+// ---------------- USUARIOS (admin) ----------------
+async function showUsersModal(){
+  let users = [];
+  try{ users = await apiGet('/api/users'); }catch(e){ toast(e.message || 'No se pudieron cargar los usuarios'); }
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Usuarios</h3>
+      <p class="hint">Cada rol tiene un nivel de acceso distinto. Elige el que le corresponda a cada persona.</p>
+      <div class="admin-list" id="usersList"></div>
+      <div class="section-label">Crear usuario</div>
+      <div class="field"><label>Usuario</label><input id="newUsername" placeholder="ej. recepcion1" autocomplete="off"></div>
+      <div class="field"><label>Contraseña</label><input id="newUserPw" type="password" placeholder="mínimo 4 caracteres"></div>
+      <div class="field"><label>Rol de usuario</label>
+        <div class="role-picker" id="rolePicker">
+          ${Object.entries(ROLE_INFO).map(([key,info])=>`
+            <label class="role-option" data-role="${key}">
+              <input type="radio" name="newUserRole" value="${key}" ${key==='viewer'?'checked':''}>
+              <div><div class="ro-name">${info.label}</div><div class="ro-desc">${info.desc}</div></div>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <button type="button" class="btn-secondary" id="btnAddUser" style="width:100%;margin-top:10px;">+ Crear usuario</button>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="usersClose">Cerrar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelectorAll('.role-option').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      overlay.querySelectorAll('.role-option').forEach(o=>o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input').checked = true;
+    });
+  });
+  overlay.querySelector('.role-option[data-role="viewer"]').classList.add('selected');
+
+  function renderUsersList(){
+    const list = document.getElementById('usersList');
+    if(users.length === 0){ list.innerHTML = `<div class="empty-list">No hay usuarios</div>`; return; }
+    list.innerHTML = users.map(u=>`
+      <div class="admin-list-row">
+        <div><div class="name">${u.username}</div><div class="sub">${(ROLE_INFO[u.role]||ROLE_INFO.viewer).label}</div></div>
+        ${u.username===getUsername() ? '' : `<button class="del-btn" data-u="${u.username}" title="Eliminar usuario"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`}
+      </div>
+    `).join('');
+    list.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.onclick = async ()=>{
+        if(!confirm(`¿Eliminar al usuario "${btn.dataset.u}"?`)) return;
+        try{
+          await apiDelete('/api/users', { username: btn.dataset.u });
+          users = users.filter(u=>u.username !== btn.dataset.u);
+          renderUsersList();
+          toast('Usuario eliminado');
+        }catch(e){ toast(e.message || 'No se pudo eliminar'); }
+      };
+    });
+  }
+  renderUsersList();
+
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#usersClose').onclick = ()=>overlay.remove();
+  overlay.querySelector('#btnAddUser').onclick = async ()=>{
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newUserPw').value;
+    const role = overlay.querySelector('input[name="newUserRole"]:checked').value;
+    if(!username || !password){ toast('Completa usuario y contraseña'); return; }
+    try{
+      await apiPost('/api/users', { username, password, role });
+      toast('Usuario creado');
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newUserPw').value = '';
+      users = await apiGet('/api/users');
+      renderUsersList();
+    }catch(e){ toast(e.message || 'No se pudo crear el usuario'); }
+  };
+}
+
+// ---------------- SUGERENCIAS ----------------
+function showSuggestionsModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Enviar sugerencia</h3>
+      <p class="hint">Tu mensaje llega directo al administrador.</p>
+      <textarea class="sugg-input" id="suggText" placeholder="Escribe tu sugerencia o comentario..."></textarea>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="suggClose">Cancelar</button>
+        <button class="btn-primary-sm" id="suggSend">Enviar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.querySelector('#suggClose').onclick = ()=>overlay.remove();
+  overlay.querySelector('#suggSend').onclick = async ()=>{
+    const message = document.getElementById('suggText').value.trim();
+    if(!message){ toast('Escribe tu sugerencia'); return; }
+    try{
+      await apiPost('/api/suggestions', { message });
+      overlay.remove();
+      toast('¡Gracias! Tu sugerencia fue enviada');
+    }catch(e){ toast(e.message || 'No se pudo enviar'); }
+  };
+}
+
+route();
+</script>
+</body>
+</html>
