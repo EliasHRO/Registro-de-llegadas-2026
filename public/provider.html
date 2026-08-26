@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dockly · Portal de proveedores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EBEDF0;
+    --bg-elevated:#F4F5F7;
+    --card:#FFFFFF;
+    --border:#E1E4E9;
+    --border-soft:#EAECEF;
+    --text:#1C1F26;
+    --muted:#6B7280;
+    --accent:#E11D48;
+    --accent-dark:#AF1338;
+    --accent-glow:rgba(225,29,72,.22);
+    --accent-soft:rgba(225,29,72,.09);
+    --ok:#149A5C;
+    --ok-soft:rgba(20,154,92,.09);
+    --info:#3457D5;
+    --info-soft:rgba(52,87,213,.09);
+    --gold:#B8860B;
+    --gold-soft:rgba(184,134,11,.12);
+    --radius:16px;
+    --shadow:0 1px 2px rgba(20,22,28,.05), 0 20px 44px -22px rgba(20,22,28,.18);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  body.dashboard-bg{
+    background-image:linear-gradient(rgba(238,240,244,.92),rgba(238,240,244,.92)), url('/assets/fleet-bg.jpg');
+    background-size:cover;background-position:center 40%;background-attachment:fixed;background-repeat:no-repeat;
+  }
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  .auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .auth-card{width:100%;max-width:440px;background:rgba(255,255,255,.82);backdrop-filter:blur(18px);border-radius:22px;box-shadow:var(--shadow);border:1px solid var(--border);padding:36px 32px 30px;animation:fadeInUp .5s ease;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes popIn{0%{opacity:0;transform:scale(.85);}70%{transform:scale(1.03);}100%{opacity:1;transform:scale(1);}}
+
+  .brand-tag{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent-dark);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;border:1px solid rgba(225,29,72,.18);}
+  .brand-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+
+  h1.title{font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;text-align:center;}
+  p.sub{color:var(--muted);font-size:13.5px;margin:0 0 22px;line-height:1.5;text-align:center;}
+
+  .auth-tabs{display:flex;background:var(--bg-elevated);border-radius:11px;padding:4px;margin-bottom:22px;}
+  .auth-tab{flex:1;text-align:center;padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;}
+  .auth-tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+
+  .field{text-align:left;margin-bottom:14px;}
+  .field > label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .field > input{width:100%;padding:13px 14px;border-radius:11px;border:1.5px solid var(--border);font-size:15px;font-family:inherit;background:var(--bg-elevated);color:var(--text);}
+  .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+
+  button.primary{width:100%;padding:15px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;font-family:inherit;box-shadow:0 8px 24px -10px var(--accent-glow);}
+  button.primary:disabled{background:#3A3F4A;box-shadow:none;cursor:not-allowed;}
+  button.link-btn{background:none;border:none;color:var(--accent-dark);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;}
+
+  .err-msg{color:var(--accent-dark);font-size:12.5px;margin:-4px 0 10px;min-height:16px;text-align:left;}
+
+  /* ---- Dashboard ---- */
+  .dash-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
+  .dash-topbar .co-name{font-weight:800;font-size:15px;}
+  .dash-topbar .co-sub{font-size:11.5px;color:var(--muted);}
+  .logout-btn{background:var(--bg-elevated);border:1px solid var(--border);border-radius:9px;padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--text);cursor:pointer;}
+
+  .dash-body{flex:1;padding:22px;max-width:720px;margin:0 auto;width:100%;}
+  .dash-empty{text-align:center;color:var(--muted);font-size:14px;padding:60px 20px;}
+
+  .order-card{background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px;animation:fadeInUp .4s ease;}
+  .order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .order-title{font-weight:800;font-size:15px;}
+  .order-sub{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .order-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;}
+  .order-badge.programado{background:var(--info-soft);color:var(--info);}
+  .order-badge.confirmado{background:var(--info-soft);color:var(--info);}
+  .order-badge.en_espera{background:var(--gold-soft);color:var(--gold);}
+  .order-badge.completado{background:var(--ok-soft);color:var(--ok);}
+  .order-badge.cancelado{background:var(--accent-soft);color:var(--accent-dark);}
+  .order-badge.no_presento{background:var(--accent-soft);color:var(--accent-dark);}
+  .order-badge.reprogramado{background:var(--gold-soft);color:var(--gold);}
+
+  .dock-status-box{margin-top:12px;display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 14px;text-align:left;}
+  .dock-status-box.waiting{background:var(--bg-elevated);border:1px solid var(--border-soft);color:var(--muted);}
+  .dock-status-box.assigned{background:var(--ok-soft);border:1px solid rgba(46,217,136,.35);color:#1C1F26;}
+  .dock-status-icon{flex:0 0 auto;}
+  .dock-status-box.waiting .dock-status-icon{color:var(--muted);}
+  .dock-status-box.assigned .dock-status-icon{color:#0F8A4F;}
+  .dock-status-title{font-weight:800;font-size:13.5px;color:var(--text);}
+  .dock-status-sub{font-size:11.5px;color:var(--muted);margin-top:1px;}
+
+  .refresh-hint{text-align:center;font-size:11.5px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+
+function getProviderToken(){ return sessionStorage.getItem('provider_token'); }
+function getProviderCompany(){ return sessionStorage.getItem('provider_company'); }
+function getProviderUsername(){ return sessionStorage.getItem('provider_username'); }
+function setProviderSession(token, username, companyName){
+  sessionStorage.setItem('provider_token', token);
+  sessionStorage.setItem('provider_username', username);
+  sessionStorage.setItem('provider_company', companyName);
+}
+function clearProviderSession(){
+  sessionStorage.removeItem('provider_token');
+  sessionStorage.removeItem('provider_username');
+  sessionStorage.removeItem('provider_company');
+}
+
+async function providerApiPost(path, body){
+  let r;
+  try{
+    r = await fetch(path, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', ...(getProviderToken()?{'Authorization':'Bearer '+getProviderToken()}:{}) },
+      body: JSON.stringify(body)
+    });
+  }catch(e){
+    throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.');
+  }
+  const text = await r.text();
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ throw new Error('Respuesta inesperada del servidor.'); }
+  if(!r.ok) throw new Error(data.error || 'Ocurrió un error');
+  return data;
+}
+async function providerApiGet(path){
+  let r;
+  try{
+    r = await fetch(path, { headers: { 'Authorization':'Bearer '+getProviderToken() } });
+  }catch(e){
+    throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.');
+  }
+  if(r.status === 403){ clearProviderSession(); renderAuthScreen(); throw new Error('Tu sesión expiró, inicia sesión de nuevo.'); }
+  const text = await r.text();
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ throw new Error('Respuesta inesperada del servidor.'); }
+  if(!r.ok) throw new Error(data.error || 'Ocurrió un error');
+  return data;
+}
+
+const STATUS_LABEL = {
+  programado:'Programado', confirmado:'Confirmado', en_espera:'En espera (llegó)',
+  completado:'Completado', cancelado:'Cancelado', no_presento:'No se presentó', reprogramado:'Reprogramado'
+};
+const ARRIVAL_STATUS_LABEL = { esperando:'Esperando', en_descarga:'En descarga', despachado:'Despachado' };
+
+function fmtDate(d){
+  if(!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function fmtTime(t){
+  if(!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const period = h>=12?'p.m.':'a.m.';
+  const h12 = h%12===0?12:h%12;
+  return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+}
+
+let dashPollTimer = null;
+
+function renderApp(){
+  if(getProviderToken()){ renderDashboard(); } else { renderAuthScreen(); }
+}
+
+function renderAuthScreen(){
+  if(dashPollTimer){ clearTimeout(dashPollTimer); dashPollTimer = null; }
+  document.body.className = 'dashboard-bg';
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div style="text-align:center;"><span class="brand-tag"><span class="dot"></span>Dockly · Proveedores</span></div>
+        <h1 class="title">Portal de proveedores</h1>
+        <p class="sub">Consulta el estado de tus órdenes de compra y la cita de entrega asignada.</p>
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tabLogin">Iniciar sesión</div>
+          <div class="auth-tab" id="tabRegister">Registrarme</div>
+        </div>
+        <div id="authFormArea"></div>
+      </div>
+    </div>
+  `;
+  const formArea = document.getElementById('authFormArea');
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+
+  function paintLogin(){
+    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
+    formArea.innerHTML = `
+      <div class="field"><label>Usuario</label><input id="loginUser" autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label><input id="loginPass" type="password" autocomplete="current-password"></div>
+      <div class="err-msg" id="authErr"></div>
+      <button class="primary" id="btnLogin">Iniciar sesión</button>
+    `;
+    document.getElementById('btnLogin').onclick = async ()=>{
+      const errEl = document.getElementById('authErr');
+      errEl.textContent = '';
+      const username = document.getElementById('loginUser').value.trim();
+      const password = document.getElementById('loginPass').value;
+      if(!username || !password){ errEl.textContent = 'Completa usuario y contraseña'; return; }
+      const btn = document.getElementById('btnLogin');
+      btn.disabled = true; btn.textContent = 'Ingresando...';
+      try{
+        const res = await providerApiPost('/api/provider-auth', { action:'login', username, password, country:'GT' });
+        setProviderSession(res.token, res.username, res.companyName);
+        renderDashboard();
+      }catch(e){
+        errEl.textContent = e.message || 'No se pudo iniciar sesión';
+        btn.disabled = false; btn.textContent = 'Iniciar sesión';
+      }
+    };
+    document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnLogin').click(); });
+  }
+
+  function paintRegister(){
+    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
+    formArea.innerHTML = `
+      <div class="field"><label>Nombre de la empresa / proveedor</label><input id="regCompany" placeholder="ej. Distribuidora XYZ"></div>
+      <div class="field"><label>Usuario</label><input id="regUser" autocomplete="username" placeholder="mínimo 3 caracteres"></div>
+      <div class="field"><label>Contraseña</label><input id="regPass" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres"></div>
+      <div class="field"><label>Nombre de contacto (opcional)</label><input id="regContact"></div>
+      <div class="field"><label>Teléfono (opcional)</label><input id="regPhone"></div>
+      <div class="field"><label>Correo (opcional)</label><input id="regEmail" type="email"></div>
+      <div class="err-msg" id="authErr"></div>
+      <button class="primary" id="btnRegister">Crear cuenta</button>
+    `;
+    document.getElementById('btnRegister').onclick = async ()=>{
+      const errEl = document.getElementById('authErr');
+      errEl.textContent = '';
+      const companyName = document.getElementById('regCompany').value.trim();
+      const username = document.getElementById('regUser').value.trim();
+      const password = document.getElementById('regPass').value;
+      const contactName = document.getElementById('regContact').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      if(!companyName || !username || !password){ errEl.textContent = 'Completa empresa, usuario y contraseña'; return; }
+      const btn = document.getElementById('btnRegister');
+      btn.disabled = true; btn.textContent = 'Creando cuenta...';
+      try{
+        const res = await providerApiPost('/api/provider-auth', { action:'register', username, password, companyName, contactName, phone, email, country:'GT' });
+        setProviderSession(res.token, res.username, res.companyName);
+        renderDashboard();
+      }catch(e){
+        errEl.textContent = e.message || 'No se pudo crear la cuenta';
+        btn.disabled = false; btn.textContent = 'Crear cuenta';
+      }
+    };
+  }
+
+  tabLogin.onclick = paintLogin;
+  tabRegister.onclick = paintRegister;
+  paintLogin();
+}
+
+async function renderDashboard(){
+  document.body.className = 'dashboard-bg';
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="dash-topbar">
+      <div>
+        <div class="co-name">${getProviderCompany()||''}</div>
+        <div class="co-sub">Portal de proveedores · Dockly</div>
+      </div>
+      <button class="logout-btn" id="btnLogout">Cerrar sesión</button>
+    </div>
+    <div class="dash-body" id="dashBody">
+      <div class="dash-empty">Cargando tus órdenes...</div>
+    </div>
+  `;
+  document.getElementById('btnLogout').onclick = ()=>{
+    clearProviderSession();
+    if(dashPollTimer){ clearTimeout(dashPollTimer); dashPollTimer = null; }
+    renderAuthScreen();
+  };
+  await loadAndPaintOrders();
+  schedulePoll();
+}
+
+function schedulePoll(){
+  if(dashPollTimer) clearTimeout(dashPollTimer);
+  dashPollTimer = setTimeout(async ()=>{
+    await loadAndPaintOrders();
+    schedulePoll();
+  }, 20000);
+}
+
+async function loadAndPaintOrders(){
+  const body = document.getElementById('dashBody');
+  if(!body) return;
+  let orders;
+  try{
+    orders = await providerApiGet('/api/provider-orders');
+  }catch(e){
+    if(document.getElementById('dashBody')) body.innerHTML = `<div class="dash-empty">${e.message||'No se pudieron cargar tus órdenes'}</div>`;
+    return;
+  }
+  if(!orders.length){
+    body.innerHTML = `<div class="dash-empty">Aún no tienes órdenes de compra registradas.<br>En cuanto el equipo de bodega te agende una cita, aparecerá aquí.</div>`;
+    return;
+  }
+  body.innerHTML = orders.map(o=>`
+    <div class="order-card">
+      <div class="order-top">
+        <div>
+          <div class="order-title">Orden ${o.orderNumber}</div>
+          <div class="order-sub">${o.category} · ${o.scopeLabel||''}</div>
+          <div class="order-sub">${fmtDate(o.date)} · ${fmtTime(o.time)}</div>
+        </div>
+        <span class="order-badge ${o.status}">${STATUS_LABEL[o.status]||o.status}</span>
+      </div>
+      ${o.arrival ? `
+        <div class="dock-status-box ${o.arrival.dock?'assigned':'waiting'}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="dock-status-icon">${o.arrival.dock
+            ? '<rect x="3" y="4" width="7" height="16" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="4" width="7" height="16" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 8v8M17.5 8v8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>'
+            : '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'}</svg>
+          <div>
+            <div class="dock-status-title">${o.arrival.dock ? 'Estaciónate en: '+o.arrival.dock : 'Esperando asignación de muelle'}</div>
+            <div class="dock-status-sub">${ARRIVAL_STATUS_LABEL[o.arrival.status]||''}</div>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('') + `<div class="refresh-hint">Esta pantalla se actualiza sola cada 20 segundos.</div>`;
+}
+
+renderApp();
+</script>
+</body>
+</html>
